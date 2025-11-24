@@ -59,7 +59,7 @@ HEROKU_API_KEY = getenv("HEROKU_API_KEY")
 #SOURCE = getenv("SOURCE", "")
 UPSTREAM_REPO = getenv(
     "UPSTREAM_REPO",
-    "https://github.com/ayushprincekmr03-boop/Kanha-clone.git",
+    "https://github.com/Oyekanhaa/Kanha-clone.git",
 )
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
 GIT_TOKEN = getenv(
