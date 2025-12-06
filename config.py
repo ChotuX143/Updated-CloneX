@@ -74,8 +74,8 @@ GIT_TOKEN = getenv(
 
 # ------------------------------------------------------------------------
 # -------------------------------------------------------------------------
-SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/aboutkanha")
-SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/kanhasworld")
+SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/ll_P_U_L_lI")
+SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/l_HEARTBEAT_l")
 #-----------------------------------------------------
 # -------------------------------------------------------------------------------
 
@@ -144,8 +144,8 @@ confirmer = {}
 # ------------------------------------------------------------------------
 
 STREAMI_PICS = [
-           "https://files.catbox.moe/6ewyca.jpg",
-        "https://files.catbox.moe/cbpj3q.jpg",
+           "https://files.catbox.moe/u8ray8.jpg",
+        "https://files.catbox.moe/spenfn.jpg",
         "https://files.catbox.moe/hn384x.jpg",
         "https://files.catbox.moe/0acktl.jpg",
         "https://files.catbox.moe/s1pxqw.jpg",
@@ -177,15 +177,15 @@ STREAMI_PICS = [
 ]
 
 START_IMG_URL = getenv(
-    "START_IMG_URL", "https://files.catbox.moe/9nfozh.jpg"
+    "START_IMG_URL", "https://files.catbox.moe/spenfn.jpg"
 )
 
 HELP_IMG_URL = getenv(
-    "HELP_IMG_URL", "https://files.catbox.moe/fchk2z.jpg"
+    "HELP_IMG_URL", "https://files.catbox.moe/u8ray8.jpg"
 )
 
 PING_IMG_URL = getenv(
-    "PING_IMG_URL", "https://files.catbox.moe/fchk2z.jpg"
+    "PING_IMG_URL", "https://files.catbox.moe/sp9zvc.jpg"
 )
 PLAYLIST_IMG_URL = "https://i.ibb.co/gL3ykkyh/play-music.jpg"
 STATS_IMG_URL = "https://i.ibb.co/pBqPtFYn/statistics.jpg"
