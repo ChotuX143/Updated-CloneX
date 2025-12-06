@@ -15,13 +15,13 @@ API_HASH = getenv("API_HASH")
 BOT_TOKEN = getenv("BOT_TOKEN")
 BOT_ID = getenv("BOT_ID")
 # -------------------------------------------------------
-OWNER_USERNAME = getenv("OWNER_USERNAME","oyekanhaa")
+OWNER_USERNAME = getenv("OWNER_USERNAME"," ")
 # --------------------------------------------------------
-BOT_USERNAME = getenv("BOT_USERNAME" , "Pikaaclonebot")
+BOT_USERNAME = getenv("BOT_USERNAME" , " ")
 # --------------------------------------------------------
-BOT_NAME = getenv("BOT_NAME" , "pikachu")
+BOT_NAME = getenv("BOT_NAME" , " ")
 # ---------------------------------------------------------
-ASSUSERNAME = getenv("ASSUSERNAME" , "pikaassistant")
+ASSUSERNAME = getenv("ASSUSERNAME" , " ")
 # ---------------------------------------------------------
 
 
@@ -43,7 +43,7 @@ LOGGER_ID = int(getenv("LOGGER_ID"))
 CLONE_LOGGER = LOGGER_ID
 # ----------------------------------------------------------------
 # ----------------------------------------------------------------
-OWNER_ID = int(getenv("OWNER_ID", 7682307978))
+OWNER_ID = int(getenv("OWNER_ID", ))
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
 # config.py
@@ -59,7 +59,7 @@ HEROKU_API_KEY = getenv("HEROKU_API_KEY")
 #SOURCE = getenv("SOURCE", "")
 UPSTREAM_REPO = getenv(
     "UPSTREAM_REPO",
-    "https://github.com/Oyekanhaa/Kanha-clone.git",
+    "https://github.com/UFCUPDATES/TAMANNACLONE",
 )
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
 GIT_TOKEN = getenv(
