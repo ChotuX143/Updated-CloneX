@@ -12,7 +12,7 @@ from .utils import StartTime
 from VILLAIN.utils import get_readable_time
 from VILLAIN.utils.decorators.language import language
 
-APP_LINK = f"https://t.me/Pikaaclonebot"
+APP_LINK = f"https://t.me/TamannaCloneBot"
 
 
 @Client.on_message(filters.command("clone"))
