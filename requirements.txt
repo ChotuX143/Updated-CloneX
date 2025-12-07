@@ -17,6 +17,7 @@ pytz
 pillow==9.5.0
 psutil
 py-tgcalls==0.9.7
+# The_LuckyX
 pykeyboard
 kurigram==2.1.35
 python-dotenv
@@ -33,5 +34,3 @@ youtube-search
 youtube-search-python
 py-yt-search
 yt-dlp
-
-# The_LuckyX
