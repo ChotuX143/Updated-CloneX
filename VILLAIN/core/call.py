@@ -38,6 +38,7 @@ from VILLAIN.utils.stream.autoclear import auto_clean
 from strings import get_string
 from VILLAIN.utils.thumbnails import get_thumb
 
+# इन-मेमोरी डिक्शनरी
 autoend = {}
 counter = {}
 
