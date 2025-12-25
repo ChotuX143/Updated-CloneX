@@ -5,6 +5,10 @@ cloneownerdb = mongodb.cloneownerdb
 clonebotdb = pymongodb.clonebotdb
 clonebotnamedb = mongodb.clonebotnamedb
 
+# --- YE DO DATABASE COLLECTIONS ADD KIYE HAIN ---
+chatsdbc = mongodb.chatsc       
+usersdbc = mongodb.tgusersdbc   
+# ------------------------------------------------
 
 # clone bot owner
 async def save_clonebot_owner(bot_id, user_id):
@@ -54,23 +58,6 @@ def check_bot_premium(bot_id):
         return None
 #check premium --------------
 
-"""
-# Function to get Support Chats dynamically for a given bot_id
-def get_cloned_support_chat(bot_id):
-    # MongoDB query to find the bot data using bot_id
-    bot_data = clonebotdb.find_one({"bot_id": bot_id})
-    if bot_data:
-        return bot_data["support"]
-    return None
-
-# Function to get Support Channel dynamically for a given bot_id
-def get_cloned_support_channel(bot_id):
-    # MongoDB query to find the bot data using bot_id
-    bot_data = clonebotdb.find_one({"bot_id": bot_id})
-    if bot_data:
-        return bot_data["channel"]
-    return None
-"""
 
 async def get_cloned_support_chat(bot_id: int) -> str:
     bot_details = clonebotdb.find_one({"bot_id": bot_id})
@@ -89,3 +76,19 @@ async def has_user_cloned_any_bot(user_id: int) -> bool:
         return True
     
     return False
+
+# -------------------------------------------------------------------
+# NEW ADDED FUNCTIONS FOR GLOBAL BROADCAST FIX
+# -------------------------------------------------------------------
+
+async def get_served_chats_clone(bot_id):
+    served_chats = []
+    async for chat in chatsdbc.find({"bot_id": bot_id}):
+        served_chats.append(chat)
+    return served_chats
+
+async def get_served_users_clone(bot_id):
+    served_users = []
+    async for user in usersdbc.find({"bot_id": bot_id}):
+        served_users.append(user)
+    return served_users
