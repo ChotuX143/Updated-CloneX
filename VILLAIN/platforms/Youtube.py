@@ -6,7 +6,7 @@ import aiohttp
 import aiofiles
 from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
-from youtubesearchpython.future import VideosSearch, CustomSearch
+from py_yt import VideosSearch, CustomSearch
 from VILLAIN import LOGGER, app 
 from VILLAIN.utils.formatters import time_to_seconds
 from motor.motor_asyncio import AsyncIOMotorClient
