@@ -3,7 +3,7 @@ from pyrogram.types import (
     InlineKeyboardMarkup,
     InlineQueryResultPhoto,
 )
-from youtubesearchpython.__future__ import VideosSearch
+from py_yt import VideosSearch
 from pyrogram import filters, Client
 from VILLAIN import app
 from VILLAIN.utils.inlinequery import answer
