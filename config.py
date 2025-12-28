@@ -5,7 +5,8 @@ from pyrogram import filters
 
 load_dotenv()
 
-API_ID = int(getenv("API_ID"))
+# --- Essentials ---
+API_ID = int(getenv("API_ID", "0")) # Added default 0 to prevent int() error if missing
 API_HASH = getenv("API_HASH")
 
 BOT_TOKEN = getenv("BOT_TOKEN")
@@ -18,52 +19,53 @@ ASSUSERNAME = getenv("ASSUSERNAME", "")
 
 MONGO_DB_URI = getenv("MONGO_DB_URI")
 
-YTPROXY_URL = getenv("YTPROXY_URL", 'https://tgapi.xbitcode.com') ## 
+# --- URLs & Keys ---
+YTPROXY_URL = getenv("YTPROXY_URL", 'https://tgapi.xbitcode.com') 
 YT_API_KEY = getenv("YT_API_KEY" , 'xbit_B4BJY2DSA1NEGXRRIGV9YZ') 
-COOKIES_URL=getenv("COOKIES_URL" , "https://gist.githubusercontent.com/sparrow9616/f29fc6588086a3c72d92dd9c03773350/raw/4229f3f4aab4a6693fc0794d136d30f54d67ae85/gistfile1.txt")
-
+COOKIES_URL = getenv("COOKIES_URL" , "https://gist.githubusercontent.com/sparrow9616/f29fc6588086a3c72d92dd9c03773350/raw/4229f3f4aab4a6693fc0794d136d30f54d67ae85/gistfile1.txt")
 
 API_URL = "https://api-dl-1.gleeze.com/yt"
 VIDEO_API_URL = "https://api-dl-1.gleeze.com/yt"
 API_KEY = getenv("API_KEY", "xbit_PS4ZA54AU61985SONTXDDL")
 
+# --- Limits ---
 DURATION_LIMIT_MIN = int(getenv("DURATION_LIMIT", 17000))
-
-LOGGER_ID = int(getenv("LOGGER_ID"))
-CLONE_LOGGER = LOGGER_ID
-
-OWNER_ID = int(getenv("OWNER_ID", 0))  # ✔️ default added
-
-HEROKU_APP_NAME = getenv("HEROKU_APP_NAME")
-HEROKU_API_KEY = getenv("HEROKU_API_KEY")
-
-UPSTREAM_REPO = getenv(
-    "UPSTREAM_REPO",
-    "https://github.com/UFCUPDATES/TAMANNACLONE",
-)
-UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
-GIT_TOKEN = getenv("GIT_TOKEN", "")
-
-SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/ll_P_U_L_lI")
-SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/l_HEARTBEAT_l")
-
-AUTO_LEAVING_ASSISTANT = getenv("AUTO_LEAVING_ASSISTANT", "False")
-AUTO_LEAVE_ASSISTANT_TIME = int(getenv("ASSISTANT_LEAVE_TIME", "9000"))
-
 SONG_DOWNLOAD_DURATION = int(getenv("SONG_DOWNLOAD_DURATION", "9999999"))
 SONG_DOWNLOAD_DURATION_LIMIT = int(getenv("SONG_DOWNLOAD_DURATION_LIMIT", "9999999"))
-
-SPOTIFY_CLIENT_ID = getenv("SPOTIFY_CLIENT_ID", "1c21247d714244ddbb09925dac565aed")
-SPOTIFY_CLIENT_SECRET = getenv("SPOTIFY_CLIENT_SECRET", "709e1a2969664491b58200860623ef19")
-
 PLAYLIST_FETCH_LIMIT = int(getenv("PLAYLIST_FETCH_LIMIT", 25))
 
 TG_AUDIO_FILESIZE_LIMIT = int(getenv("TG_AUDIO_FILESIZE_LIMIT", "5242880000"))
 TG_VIDEO_FILESIZE_LIMIT = int(getenv("TG_VIDEO_FILESIZE_LIMIT", "5242880000"))
 
+# --- Logging & Owner ---
+LOGGER_ID = int(getenv("LOGGER_ID", "0")) # Added default to prevent error
+CLONE_LOGGER = LOGGER_ID
+OWNER_ID = int(getenv("OWNER_ID", 0))
+
+# --- Heroku & Repo ---
+HEROKU_APP_NAME = getenv("HEROKU_APP_NAME")
+HEROKU_API_KEY = getenv("HEROKU_API_KEY")
+
+UPSTREAM_REPO = getenv("UPSTREAM_REPO", "https://github.com/UFCUPDATES/TAMANNACLONE")
+UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
+GIT_TOKEN = getenv("GIT_TOKEN", "")
+
+# --- Support ---
+SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/ll_P_U_L_lI")
+SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/l_HEARTBEAT_l")
+
+# --- Assistant ---
+AUTO_LEAVING_ASSISTANT = getenv("AUTO_LEAVING_ASSISTANT", "False")
+AUTO_LEAVE_ASSISTANT_TIME = int(getenv("ASSISTANT_LEAVE_TIME", "9000"))
+
 STRING1 = getenv("STRING_SESSION", "")
 STRING2 = getenv("STRING_SESSION2", None)
 
+# --- Spotify ---
+SPOTIFY_CLIENT_ID = getenv("SPOTIFY_CLIENT_ID", "1c21247d714244ddbb09925dac565aed")
+SPOTIFY_CLIENT_SECRET = getenv("SPOTIFY_CLIENT_SECRET", "709e1a2969664491b58200860623ef19")
+
+# --- Internal Lists ---
 BANNED_USERS = filters.user()
 adminlist = {}
 lyrical = {}
@@ -71,6 +73,7 @@ votemode = {}
 autoclean = []
 confirmer = {}
 
+# --- Images ---
 STREAMI_PICS = [
     "https://files.catbox.moe/u8ray8.jpg",
     "https://files.catbox.moe/spenfn.jpg",
@@ -119,7 +122,8 @@ SPOTIFY_ALBUM_IMG_URL = "https://i.ibb.co/XZfMS8Db/spotify.jpg"
 SPOTIFY_PLAYLIST_IMG_URL = "https://i.ibb.co/XZfMS8Db/spotify.jpg"
 
 def time_to_seconds(time):
-    return sum(int(x) * 60**i for i, x in enumerate(reversed(str(time).split(":"))))
+    string_time = str(time)
+    return sum(int(x) * 60**i for i, x in enumerate(reversed(string_time.split(":"))))
 
 DURATION_LIMIT = int(time_to_seconds(f"{DURATION_LIMIT_MIN}:00"))
 
