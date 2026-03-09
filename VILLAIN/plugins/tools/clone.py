@@ -28,7 +28,7 @@ from config import SUPPORT_CHAT, OWNER_ID
 from datetime import datetime
 CLONES = set()
 
-C_BOT_DESC = "Wᴀɴᴛ ᴀ ʙᴏᴛ ʟɪᴋᴇ ᴛʜɪs? Cʟᴏɴᴇ ɪᴛ ɴᴏᴡ! ✅\n\nVɪsɪᴛ: @TamannaCloneBot ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!\n\n - Uᴘᴅᴀᴛᴇ: @UFC_UPDATES\n - Sᴜᴘᴘᴏʀᴛ: @l_HEARTBEAT_l"
+C_BOT_DESC = "Wᴀɴᴛ ᴀ ʙᴏᴛ ʟɪᴋᴇ ᴛʜɪs? Cʟᴏɴᴇ ɪᴛ ɴᴏᴡ! ✅\n\nVɪsɪᴛ: @TamannaCloneBot ᴛᴏ ɢᴇᴛ sᴛᴀʀᴛᴇᴅ!\n\n - Uᴘᴅᴀᴛᴇ: @TamannaUpdate\n - Sᴜᴘᴘᴏʀᴛ: @TamannaSupport"
 
 C_BOT_COMMANDS = [
                 {"command": "/start", "description": "sᴛᴀʀᴛs ᴛʜᴇ ᴍᴜsɪᴄ ʙᴏᴛ"},
@@ -102,8 +102,8 @@ async def clone_txt(client, message, _):
                 "name": bot.first_name,
                 "token": bot_token,
                 "username": bot.username,
-                "channel": "ll_P_U_L_lI",
-                "support": "l_HEARTBEAT_l",
+                "channel": "TamannaUpdate",
+                "support": "TamannaSupport",
                 "premium" : True,
                 "Date" : False,
             }
