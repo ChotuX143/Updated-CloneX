@@ -21,7 +21,7 @@ MONGO_DB_URI = getenv("MONGO_DB_URI")
 
 # --- URLs & Keys ---
 YTPROXY_URL = getenv("YTPROXY_URL", 'https://tgapi.xbitcode.com') 
-YT_API_KEY = getenv("YT_API_KEY" , 'xbit_B4BJY2DSA1NEGXRRIGV9YZ') 
+YT_API_KEY = getenv("YT_API_KEY" , 'xbit_TyzhVnTqQuydwFWE-JkBP_jieS8R8MxF') 
 COOKIES_URL = getenv("COOKIES_URL" , "https://gist.githubusercontent.com/sparrow9616/f29fc6588086a3c72d92dd9c03773350/raw/4229f3f4aab4a6693fc0794d136d30f54d67ae85/gistfile1.txt")
 
 API_URL = "https://api-dl-1.gleeze.com/yt"
@@ -48,11 +48,11 @@ HEROKU_API_KEY = getenv("HEROKU_API_KEY")
 
 UPSTREAM_REPO = getenv("UPSTREAM_REPO", "https://github.com/UFCUPDATES/TAMANNACLONE")
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
-GIT_TOKEN = getenv("GIT_TOKEN", "")
+GIT_TOKEN = getenv("GIT_TOKEN", "https://t.me/TamannaSupport")
 
 # --- Support ---
 SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/ll_P_U_L_lI")
-SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/l_HEARTBEAT_l")
+SUPPORT_CHAT = getenv("SUPPORT_CHAT", "")
 
 # --- Assistant ---
 AUTO_LEAVING_ASSISTANT = getenv("AUTO_LEAVING_ASSISTANT", "False")
