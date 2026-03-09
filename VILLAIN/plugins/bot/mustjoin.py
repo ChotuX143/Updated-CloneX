@@ -6,7 +6,7 @@ from VILLAIN import app
 
 #--------------------------
 
-MUST_JOIN = "l_HEARTBEAT_l"
+MUST_JOIN = "TamannaSupport"
 
 #--------------------------
 
