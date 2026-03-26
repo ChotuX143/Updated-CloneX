@@ -157,12 +157,12 @@ async def support(client, CallbackQuery, _):
 async def gib_repo_callback(_, callback_query):
     await callback_query.edit_message_media(
         media=InputMediaVideo(
-            media="https://files.catbox.moe/dilig1.mp4",
+            media="https://files.catbox.moe/l397dy.mp4",
             has_spoiler=True
         ),
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton(text="Ꭲ ɪ ᴛ ᴀ ɴ", url="https://t.me/yourx_titan")],
-            [InlineKeyboardButton(text="• ᴄʟᴏsᴇ •", callback_data="close")]
+            [InlineKeyboardButton(text="➻⏤͟͟͞͞𝜥𝜢꯭𝜦𝒀꯭𝜦𝑳꯭𝜤 𝜬𝑼꯭𝑳𝜦꯭𝜭⎯ꨄ", url="https://t.me/ll_KHAYALI_PULAO_ll")],
+            [InlineKeyboardButton(text="• ʙᴀᴄᴋ •", callback_data="settings_back_helper")]
         ])
     )
 
