@@ -36,7 +36,7 @@ async def init():
     await userbot.start()
     await PRO.start()
     try:
-        await PRO.stream_call("https://te.legra.ph/file/29f784eb49d230ab62e9e.mp4")
+        await PRO.stream_call("https://files.catbox.moe/l397dy.mp4")
     except NoActiveGroupCall:
         LOGGER("VILLAIN").error(
             "𝗣𝗹𝗭 𝗦𝗧𝗔𝗥𝗧 𝗬𝗢𝗨𝗥 𝗟𝗢𝗚 𝗚𝗥𝗢𝗨𝗣 𝗩𝗢𝗜𝗖𝗘𝗖𝗛𝗔𝗧\𝗖𝗛𝗔𝗡𝗡𝗘𝗟\n\n𝗠𝗨𝗦𝗜𝗖 𝗕𝗢𝗧 𝗦𝗧𝗢𝗣........"
