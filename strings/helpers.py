@@ -204,3 +204,110 @@ CLONE_LOGGER_HELP = """
 - Iғ ʟᴏɢɢɪɴɢ ɪs ᴇɴᴀʙʟᴇᴅ, ᴀʟʟ ᴘʟᴀʏ ʀᴇǫᴜᴇsᴛs ᴀɴᴅ ᴜsᴇʀ ᴀᴄᴛɪᴏɴs ᴡɪʟʟ ʙᴇ ʟᴏɢɢᴇᴅ ɪɴ ᴛʜᴇ sᴇᴛ ʟᴏɢ ᴄʜᴀᴛ.
 - Tᴏ ᴅɪsᴀʙʟᴇ ʟᴏɢɢɪɴɢ, ᴜsᴇ <code>/logger disable</code>
 """
+
+HELP_19 = """
+💰 <b>𝐄𝐜𝐨𝐧𝐨𝐦𝐲 & 𝐒𝐡𝐨𝐩</b>
+
+<blockquote>
+/bal
+↳ Check Wallet, Rank & Inventory.
+
+/shop
+↳ Buy Weapons & Armor.
+
+/give [amt] [user]
+↳ Transfer (10% Tax).
+
+/claim
+↳ Group Bonus (2k).
+
+/daily
+↳ Streak Rewards.
+
+/ranking
+↳ Global Leaderboards.
+</blockquote>
+"""
+
+HELP_18 = """
+💍 <b>𝐒𝐨𝐜𝐢𝐚𝐥 & 𝐋𝐨𝐯𝐞</b>
+
+<blockquote>
+/propose @user
+↳ Marry someone (5% Tax Perk).
+
+/marry
+↳ Check relationship status.
+
+/divorce
+↳ Break up (Cost: 2k).
+
+/couple
+↳ Matchmaking Fun!
+</blockquote>
+"""
+HELP_20 = """
+⚔️ <b>𝐑𝐏𝐆 & 𝐖𝐚𝐫</b>
+
+<blockquote>
+/kill [user]
+↳ Murder. 50% Chance to loot Items!
+
+/rob [amt] [user]
+↳ Steal coins + 20% Chance to steal Items.
+
+/protect 1d
+↳ Buy Shield. Protects partner too!
+
+/revive
+↳ Revive instantly for 500 coins.
+</blockquote>
+"""
+
+HELP_21 = """
+🛡️ <b>𝐀𝐝𝐦𝐢𝐧 & 𝐌𝐨𝐝𝐞𝐫𝐚𝐭𝐢𝐨𝐧</b>
+
+<blockquote>
+/ban
+↳ Ban a user.
+
+/sban
+↳ Delete messages & ban user.
+
+/tban
+↳ Ban for specific time.
+
+/unban
+↳ Unban a user.
+
+/warn
+↳ Warn a user.
+
+/unwarn
+↳ Remove a warning.
+
+/rmwarns
+↳ Remove all warnings.
+
+/kick
+↳ Kick a user.
+
+/purge
+↳ Purge messages.
+
+/del
+↳ Delete message.
+
+/pin
+↳ Pin a message.
+
+/unpin
+↳ Unpin a message.
+
+/mute
+↳ Mute a user.
+
+/unmute
+↳ Unmute a user.
+</blockquote>
+"""
