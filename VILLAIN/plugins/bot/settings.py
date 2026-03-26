@@ -103,16 +103,16 @@ async def support(client, CallbackQuery, _):
 @languageCB
 async def support(client, CallbackQuery, _):
     await CallbackQuery.edit_message_text(
-        text="here are ur clone bot settings.",
+        text="ʜєꝛє ᴧꝛє υꝛ ᴄʟσηє ʙσᴛ sєᴛᴛɪηɢs.",
         reply_markup=InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton(text="Social", callback_data="clone_callback hb18"),
-                    InlineKeyboardButton(text="economy", callback_data="clone_callback hb19"),
+                    InlineKeyboardButton(text="sσᴄɪᴧʟ", callback_data="clone_callback hb18"),
+                    InlineKeyboardButton(text="єᴄσησϻʏ", callback_data="clone_callback hb19"),
                 ],
                 [
-                    InlineKeyboardButton(text="fight", callback_data="clone_callback hb20"),
-                    InlineKeyboardButton(text="admin", callback_data="clone_callback hb21"),
+                    InlineKeyboardButton(text="Ғɪɢʜᴛ", callback_data="clone_callback hb20"),
+                    InlineKeyboardButton(text="ᴧᴅϻɪη", callback_data="clone_callback hb21"),
                 ],
                 # 🔙 Back Button
                 [
