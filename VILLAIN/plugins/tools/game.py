@@ -1,6 +1,6 @@
 from pyrogram import filters
-from PurviBots import app
-from PurviBots.utils.database import mongodb
+from VILLAIN import app
+from VILLAIN.utils.database import mongodb
 import random
 import time
 
