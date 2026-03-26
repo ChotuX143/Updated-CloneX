@@ -110,3 +110,30 @@ async def mb_plugin_button(client, CallbackQuery):
         await CallbackQuery.edit_message_text(f"`something errors`",reply_markup=keyboard,parse_mode=enums.ParseMode.MARKDOWN)
     else:
         await CallbackQuery.edit_message_text(getattr(Helper, cb), reply_markup=keyboard)
+
+@app.on_callback_query(filters.regex("clone_callback") & ~BANNED_USERS)
+@languageCB
+async def clone_cb(client, CallbackQuery, _):
+    callback_data = CallbackQuery.data.strip()
+    cb = callback_data.split(None, 1)[1]
+
+    # 🔙 Back → clone panel
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("🔙 Back", callback_data="shiv")
+            ]
+        ]
+    )
+
+    if cb == "hb18":
+        await CallbackQuery.edit_message_text(helpers.HELP_18, reply_markup=keyboard)
+
+    elif cb == "hb19":
+        await CallbackQuery.edit_message_text(helpers.HELP_19, reply_markup=keyboard)
+
+    elif cb == "hb20":
+        await CallbackQuery.edit_message_text(helpers.HELP_20, reply_markup=keyboard)
+
+    elif cb == "hb21":
+        await CallbackQuery.edit_message_text(helpers.HELP_21, reply_markup=keyboard)
