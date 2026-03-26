@@ -40,7 +40,7 @@ def private_panel(_):
         [
             InlineKeyboardButton(
                 text=_["S_B_2"],
-                callback_data="clone_me"
+                url=config.SUPPORT_CHAT
             ),
             InlineKeyboardButton(
                 text="ɢᴧϻ𝛆𝐬",
@@ -108,23 +108,21 @@ def get_uptime():
 @app.on_callback_query(filters.regex("oapi"))
 async def show_bot_info(c: app, q: CallbackQuery):
     start = time()
-    m = await c.send_message(q.message.chat.id, "🧾ᴀᴘɪ sᴛᴀᴛᴜs........")
-    delta_ping = (time() - start) * 1000
-    await m.delete()
+    x = await c.send_message(q.message.chat.id, "ᴘɪɴɢ ᴘᴏɴɢ 💕..")
+    delta_ping = time() - start
+    await x.delete()
+    txt = f"""💌 ᴘɪɴɢ ᴘᴏɴɢ ʙᴀʙʏ...
 
-    # Short popup text (under 200 chars)
-    short_txt = f"""
-🧾ᴀᴘɪ sᴛᴀᴛᴜs
+• ᴅᴀᴛᴀʙᴀsᴇ: ᴏɴʟɪɴᴇ
+• ʏᴏᴜᴛᴜʙᴇ ᴀᴘɪ: ʀᴇsᴘᴏɴsɪᴠᴇ
+• ʙᴏᴛ sᴇʀᴠᴇʀ: ʀᴜɴɴɪɴɢ sᴍᴏᴏᴛʜʟʏ
+• ʀᴇsᴘᴏɴsᴇ ᴛɪᴍᴇ: ᴏᴘᴛɪᴍᴀʟ
+• ᴀᴘɪ ᴘɪɴɢ: {delta_ping * 1000:.3f} ms   
 
-ᴅʙ : ᴏɴʟɪɴᴇ
-ʀɪsʜᴜ ᴀᴘɪ : ʀᴇsᴘᴏɴsɪᴠᴇ
-ᴀᴘɪ ᴘɪɴɢ : {delta_ping:.2f} ms
-ᴀᴘɪ ᴜᴘᴛɪᴍᴇ : {get_uptime()}
-
-✅ ᴇᴠᴇʀʏᴛʜɪɴɢ ғɪɴᴇ
+• ᴇᴠᴇʀʏᴛʜɪɴɢ ʟᴏᴏᴋs ɢᴏᴏᴅ!
 """
-
-    await q.answer(short_txt.strip(), show_alert=True)
+    await q.answer(txt, show_alert=True)
+    return
 
 
 
