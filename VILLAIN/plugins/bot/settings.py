@@ -1,38 +1,26 @@
+from time import time
+
 from pyrogram import filters
 from pyrogram.enums import ChatType
+from pyrogram.types import InputMediaVideo
 from pyrogram.errors import MessageNotModified
-from pyrogram.types import (
-    CallbackQuery,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    Message,
-)
+from pyrogram.types import (CallbackQuery, InlineKeyboardButton,
+                            InlineKeyboardMarkup, Message)
 
+import config
 from VILLAIN import app
-from VILLAIN.utils.database import (
-    add_nonadmin_chat,
-    get_authuser,
-    get_authuser_names,
-    get_playmode,
-    get_playtype,
-    get_upvote_count,
-    is_nonadmin_chat,
-    is_skipmode,
-    remove_nonadmin_chat,
-    set_playmode,
-    set_playtype,
-    set_upvotes,
-    skip_off,
-    skip_on,
-)
+from VILLAIN.utils.database import (add_nonadmin_chat, get_authuser,
+                                       get_authuser_names, get_playmode,
+                                       get_playtype, get_upvote_count,
+                                       is_nonadmin_chat, is_skipmode,
+                                       remove_nonadmin_chat, set_playmode,
+                                       set_playtype, set_upvotes, skip_off,
+                                       skip_on)
 from VILLAIN.utils.decorators.admins import ActualAdminCB
 from VILLAIN.utils.decorators.language import language, languageCB
-from VILLAIN.utils.inline.settings import (
-    auth_users_markup,
-    playmode_users_markup,
-    setting_markup,
-    vote_mode_markup,
-)
+from VILLAIN.utils.inline.settings import (auth_users_markup,
+                                              playmode_users_markup,
+                                              setting_markup, vote_mode_markup)
 from VILLAIN.utils.inline.start import private_panel
 from config import BANNED_USERS, OWNER_ID
 
@@ -66,6 +54,7 @@ async def settings_cb(client, CallbackQuery, _):
         reply_markup=InlineKeyboardMarkup(buttons),
     )
 
+
 @app.on_callback_query(filters.regex("^bot_info_data$"))
 async def show_bot_info(c: app, q: CallbackQuery):
     start = time()
@@ -85,20 +74,44 @@ async def show_bot_info(c: app, q: CallbackQuery):
     await q.answer(txt, show_alert=True)
     return
 
+
+@app.on_callback_query(filters.regex("shiv_aarumi") & ~BANNED_USERS)
+@languageCB
+async def support(client, CallbackQuery, _):
+    await CallbackQuery.edit_message_text(
+        text="ʜᴇʀᴇ ᴀʀᴇ ꜱᴏᴍᴇ ɪᴍᴘᴏʀᴛᴀɴᴛ ʟɪɴᴋꜱ.",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(text="Dᴇᴠᴇʟᴏᴘᴇʀ 🤍", user_id=config.OWNER_ID),
+                ],
+                [
+                    InlineKeyboardButton(text="Sᴜᴘᴘᴏʀᴛ 🌿", url=config.SUPPORT_CHAT),
+                    InlineKeyboardButton(text="Cʜᴀɴɴᴇʟ 🥀", url=config.SUPPORT_CHANNEL),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="ʙᴀᴄᴋ", callback_data="settingsback_helper"
+                    )
+                ],
+            ]
+        ),
+    )
+
 @app.on_callback_query(filters.regex("shiv") & ~BANNED_USERS)
 @languageCB
 async def support(client, CallbackQuery, _):
     await CallbackQuery.edit_message_text(
-        text="ʜєꝛє ᴧꝛє υꝛ ᴄʟσηє ʙσᴛ sєᴛᴛɪηɢs.",
+        text="here are ur clone bot settings.",
         reply_markup=InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton(text="sσᴄɪᴧʟ", callback_data="clone_callback hb18"),
-                    InlineKeyboardButton(text="єᴄσησϻʏ", callback_data="clone_callback hb19"),
+                    InlineKeyboardButton(text="Social", callback_data="clone_callback hb18"),
+                    InlineKeyboardButton(text="economy", callback_data="clone_callback hb19"),
                 ],
                 [
-                    InlineKeyboardButton(text="Ғɪɢʜᴛ", callback_data="clone_callback hb20"),
-                    InlineKeyboardButton(text="ᴧᴅϻɪη", callback_data="clone_callback hb21"),
+                    InlineKeyboardButton(text="fight", callback_data="clone_callback hb20"),
+                    InlineKeyboardButton(text="admin", callback_data="clone_callback hb21"),
                 ],
                 # 🔙 Back Button
                 [
@@ -107,7 +120,51 @@ async def support(client, CallbackQuery, _):
             ]
         ),
     )
-    
+  
+@app.on_callback_query(filters.regex("shiva") & ~BANNED_USERS)
+@languageCB
+async def support(client, CallbackQuery, _):
+    await CallbackQuery.edit_message_text(
+        text="ʜᴇʀᴇ ᴀʀᴇ ꜱᴏᴍᴇ ɪᴍᴘᴏʀᴛᴀɴᴛ ʟɪɴᴋꜱ.",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text="Dᴇᴠᴇʟᴏᴘᴇʀ 🤍",
+                        callback_data="help_callback hb13"
+                    ),
+                    InlineKeyboardButton(
+                        text="Sᴜᴘᴘᴏʀᴛ 🌿",
+                        callback_data="help_callback hb14"
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="Cʜᴀɴɴᴇʟ 🥀",
+                        callback_data="help_callback hb15"
+                    ),
+                    InlineKeyboardButton(
+                        text="ʙᴀᴄᴋ",
+                        callback_data="settings_back_helper"
+                    ),
+                ],
+            ]
+        ),
+    )
+
+@app.on_callback_query(filters.regex("clone_me"))
+async def gib_repo_callback(_, callback_query):
+    await callback_query.edit_message_media(
+        media=InputMediaVideo(
+            media="https://files.catbox.moe/dilig1.mp4",
+            has_spoiler=True
+        ),
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(text="Ꭲ ɪ ᴛ ᴀ ɴ", url="https://t.me/yourx_titan")],
+            [InlineKeyboardButton(text="• ᴄʟᴏsᴇ •", callback_data="close")]
+        ])
+    )
+
 @app.on_callback_query(filters.regex("settingsback_helper") & ~BANNED_USERS)
 @languageCB
 async def settings_back_markup(client, CallbackQuery: CallbackQuery, _):
@@ -117,7 +174,6 @@ async def settings_back_markup(client, CallbackQuery: CallbackQuery, _):
         pass
     if CallbackQuery.message.chat.type == ChatType.PRIVATE:
         await app.resolve_peer(OWNER_ID)
-        OWNER = OWNER_ID
         buttons = private_panel(_)
         return await CallbackQuery.edit_message_text(
             _["start_2"].format(CallbackQuery.from_user.mention, app.mention),
@@ -373,12 +429,10 @@ async def authusers_mar(client, CallbackQuery, _):
             upl = InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton(
-                            text=_["BACK_BUTTON"], callback_data=f"AU"
-                        ),
+                        InlineKeyboardButton(text=_["BACK_BUTTON"], callback_data="AU"),
                         InlineKeyboardButton(
                             text=_["CLOSE_BUTTON"],
-                            callback_data=f"close",
+                            callback_data="close",
                         ),
                     ]
                 ]
@@ -410,7 +464,7 @@ async def authusers_mar(client, CallbackQuery, _):
 @app.on_callback_query(filters.regex("VOMODECHANGE") & ~BANNED_USERS)
 @ActualAdminCB
 async def vote_change(client, CallbackQuery, _):
-    command = CallbackQuery.matches[0].group(1)
+    CallbackQuery.matches[0].group(1)
     try:
         await CallbackQuery.answer(_["set_cb_3"], show_alert=True)
     except:
