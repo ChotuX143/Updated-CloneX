@@ -84,6 +84,29 @@ async def show_bot_info(c: app, q: CallbackQuery):
 """
     await q.answer(txt, show_alert=True)
     return
+
+@app.on_callback_query(filters.regex("shiv") & ~BANNED_USERS)
+@languageCB
+async def support(client, CallbackQuery, _):
+    await CallbackQuery.edit_message_text(
+        text="ʜєꝛє ᴧꝛє υꝛ ᴄʟσηє ʙσᴛ sєᴛᴛɪηɢs.",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(text="sσᴄɪᴧʟ", callback_data="clone_callback hb18"),
+                    InlineKeyboardButton(text="єᴄσησϻʏ", callback_data="clone_callback hb19"),
+                ],
+                [
+                    InlineKeyboardButton(text="Ғɪɢʜᴛ", callback_data="clone_callback hb20"),
+                    InlineKeyboardButton(text="ᴧᴅϻɪη", callback_data="clone_callback hb21"),
+                ],
+                # 🔙 Back Button
+                [
+                    InlineKeyboardButton(text=_["BACK_BUTTON"], callback_data="settingsback_helper"),
+                ],
+            ]
+        ),
+    )
     
 @app.on_callback_query(filters.regex("settingsback_helper") & ~BANNED_USERS)
 @languageCB
