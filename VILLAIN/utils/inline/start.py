@@ -34,7 +34,7 @@ def private_panel(_):
             InlineKeyboardButton(text=_["S_B_5"], user_id=config.OWNER_ID),
             InlineKeyboardButton(
                 text="💌 ʏᴛ-ᴀᴘɪ",
-                callback_data="bot_info_data"
+                callback_data="oapi"
             ),
         ],
         [
@@ -43,8 +43,8 @@ def private_panel(_):
                 callback_data="clone_me"
             ),
             InlineKeyboardButton(
-                text="𓂃⃪𑪖𝐆𝛂ϻ𝛆𝐬",
-                callback_data="shiva"
+                text="ɢᴧϻ𝛆𝐬",
+                callback_data="shiv"
             ),
         ],
         [
