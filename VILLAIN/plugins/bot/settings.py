@@ -162,7 +162,7 @@ async def gib_repo_callback(_, callback_query):
         ),
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(text="➻⏤͟͟͞͞𝜥𝜢꯭𝜦𝒀꯭𝜦𝑳꯭𝜤 𝜬𝑼꯭𝑳𝜦꯭𝜭⎯ꨄ", url="https://t.me/ll_KHAYALI_PULAO_ll")],
-            [InlineKeyboardButton(text="• ʙᴀᴄᴋ •", callback_data="settings_back_helper")]
+            [InlineKeyboardButton(text="• ʙᴀᴄᴋ •", callback_data="settingsback_helper")]
         ])
     )
 
