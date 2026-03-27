@@ -10,6 +10,18 @@ mongo = AsyncIOMotorClient(MONGO_DB_URI)
 db = mongo["rpg_bot"]
 users = db["users"]
 
+# ---------------- SAFE USER FETCH ---------------- #
+async def get_real_user(input_user):
+    try:
+        user = await app.get_users(input_user)
+
+        if not user or not user.id:
+            return None
+
+        return user
+    except:
+        return None
+
 # ---------------- USER ---------------- #
 async def get_user(user_id):
     user = await users.find_one({"_id": user_id})
@@ -30,8 +42,6 @@ async def get_user(user_id):
     return user
 
 # ---------------- BALANCE ---------------- #
-from pyrogram import filters
-
 @app.on_message(filters.command(["balance", "bal"]))
 async def balance(_, message):
 
@@ -40,17 +50,23 @@ async def balance(_, message):
 
     # 🔁 Reply case
     if message.reply_to_message:
+        if message.reply_to_message.sender_chat:
+            return await message.reply("❌ Channel pe ye command nahi chalega")
+
+        if not message.reply_to_message.from_user:
+            return await message.reply("❌ Invalid user")
+
         user_id = message.reply_to_message.from_user.id
         name = message.reply_to_message.from_user.first_name
 
     # 🔍 Mention case
     elif len(message.command) > 1:
-        try:
-            user = await app.get_users(message.command[1])
-            user_id = user.id
-            name = user.first_name
-        except:
-            return await message.reply("❌ User not found")
+        user = await get_real_user(message.command[1])
+        if not user:
+            return await message.reply("❌ Invalid user (channel allowed nahi)")
+
+        user_id = user.id
+        name = user.first_name
 
     # 👤 Self case
     else:
@@ -69,8 +85,6 @@ async def balance(_, message):
     )
 
 # ---------------- ADD MONEY ---------------- #
-from pyrogram import filters
-
 @app.on_message(filters.command("addmoney") & filters.user(OWNER_ID))
 async def addmoney(_, message):
 
@@ -79,6 +93,12 @@ async def addmoney(_, message):
 
     # 🔁 Reply case
     if message.reply_to_message:
+        if message.reply_to_message.sender_chat:
+            return await message.reply("❌ Channel allowed nahi")
+
+        if not message.reply_to_message.from_user:
+            return await message.reply("❌ Invalid user")
+
         user_id = message.reply_to_message.from_user.id
 
         try:
@@ -88,12 +108,16 @@ async def addmoney(_, message):
 
     # 🔍 Username / ID case
     elif len(message.command) >= 3:
+        user = await get_real_user(message.command[1])
+        if not user:
+            return await message.reply("❌ Sirf real user do (channel nahi)")
+
+        user_id = user.id
+
         try:
-            user = await app.get_users(message.command[1])
-            user_id = user.id
             amount = int(message.command[2])
         except:
-            return await message.reply("Usage: /addmoney user_id/@username amount")
+            return await message.reply("❌ Invalid amount")
 
     else:
         return await message.reply("❌ गलत usage!")
@@ -102,7 +126,7 @@ async def addmoney(_, message):
     await users.update_one(
         {"_id": user_id},
         {"$inc": {"balance": amount}},
-        upsert=True  # 👈 agar user DB me nahi hai to create ho jayega
+        upsert=True
     )
 
     await message.reply(
@@ -114,6 +138,12 @@ async def addmoney(_, message):
 async def give(_, message):
     if not message.reply_to_message:
         return await message.reply("Reply to user")
+
+    if message.reply_to_message.sender_chat:
+        return await message.reply("❌ Channel allowed nahi")
+
+    if not message.reply_to_message.from_user:
+        return await message.reply("❌ Invalid user")
 
     sender = await get_user(message.from_user.id)
 
@@ -136,10 +166,7 @@ async def give(_, message):
     await message.reply("✅ Transfer successful")
 
 # ---------------- PROTECT ---------------- #
-import time
-from pyrogram import filters
-
-PROTECT_TIME = 86400  # 24 hours in seconds
+PROTECT_TIME = 86400  # 24 hours
 
 @app.on_message(filters.command("protect"))
 async def protect(_, message):
@@ -148,7 +175,6 @@ async def protect(_, message):
 
     now = time.time()
 
-    # ✅ Check if already protected and not expired
     if user.get("protected") and user.get("protect_time", 0) > now:
         remaining = int(user["protect_time"] - now)
         hours = remaining // 3600
@@ -159,7 +185,6 @@ async def protect(_, message):
             f"⏳ Remaining: {hours}h {minutes}m"
         )
 
-    # 🛡️ Set protection
     expire_time = now + PROTECT_TIME
 
     await users.update_one(
@@ -172,25 +197,20 @@ async def protect(_, message):
         }
     )
 
-    await message.reply(
-        "🛡️ Protection Enabled for 24 Hours!"
-    )
-    
+    await message.reply("🛡️ Protection Enabled for 24 Hours!")
+
 # ---------------- REVIVE ---------------- #
 @app.on_message(filters.command("revive"))
 async def revive(_, message):
     user_id = message.from_user.id
     user = await get_user(user_id)
 
-    # ❌ Already alive
     if not user.get("dead"):
         return await message.reply("❌ You are already alive!")
 
-    # 💰 Check balance
     if user.get("balance", 0) < 300:
         return await message.reply("❌ You need 300 coins to revive!")
 
-    # ❤️ Revive + Deduct coins
     await users.update_one(
         {"_id": user_id},
         {
@@ -200,50 +220,44 @@ async def revive(_, message):
     )
 
     await message.reply("❤️ You are revived!\n💸 300 coins deducted")
-    
-# ---------------- KILL ---------------- #
-import random
-from pyrogram import filters
 
+# ---------------- KILL ---------------- #
 @app.on_message(filters.command("kill"))
 async def kill(_, message):
     if not message.reply_to_message:
         return await message.reply("Reply to user")
 
+    if message.reply_to_message.sender_chat:
+        return await message.reply("❌ Channel allowed nahi")
+
+    if not message.reply_to_message.from_user:
+        return await message.reply("❌ Invalid user")
+
     killer_id = message.from_user.id
     killer = await get_user(killer_id)
 
-    # ☠️ Killer dead check
     if killer.get("dead"):
         return await message.reply("☠️ Tum dead ho! Pehle revive karo")
 
     target_id = message.reply_to_message.from_user.id
     target = await get_user(target_id)
 
-    # ☠️ Already dead check
     if target.get("dead"):
         return await message.reply("☠️ Victim is already dead!")
 
-    # 🛡️ Protection check (time-based bhi handle kare)
     if target.get("protected") and target.get("protect_time", 0) > time.time():
         return await message.reply("🛡️ User protected hai")
 
-    # 💰 Kill cost check
     if killer.get("balance", 0) < 500:
         return await message.reply("❌ Need 500 coins to kill")
 
-    # 🎁 Random reward
     reward = random.randint(100, 200)
 
-    # 💸 Deduct cost + add reward
     await users.update_one(
         {"_id": killer_id},
-        {
-            "$inc": {"balance": -500 + reward}
-        }
+        {"$inc": {"balance": -500 + reward}}
     )
 
-    # ☠️ Kill victim
     await users.update_one(
         {"_id": target_id},
         {"$set": {"dead": True}}
@@ -254,12 +268,9 @@ async def kill(_, message):
         f"💸 Cost: 500\n"
         f"🎁 Reward: {reward}\n"
         f"💰 Net: {reward - 500}"
-        )
+    )
 
 # ---------------- ROB ---------------- #
-import time
-from pyrogram import filters
-
 @app.on_message(filters.command("rob"))
 async def rob(_, message):
     user_id = message.from_user.id
@@ -275,10 +286,8 @@ async def rob(_, message):
     if amount <= 0:
         return await message.reply("❌ Amount > 0 hona chahiye")
 
-    # 👤 Robber (dead/alive both allowed)
     user = await get_user(user_id)
 
-    # 🎯 Random target
     target = await users.aggregate([
         {"$match": {"_id": {"$ne": user_id}}},
         {"$sample": {"size": 1}}
@@ -289,28 +298,24 @@ async def rob(_, message):
 
     target = target[0]
 
-    # 🛡️ Protected check
     if target.get("protected") and target.get("protect_time", 0) > time.time():
         return await message.reply("🛡️ Target protected hai! Rob fail")
 
-    # 💰 Balance check
     if target.get("balance", 0) < amount:
         return await message.reply("❌ Target ke paas itne coins nahi")
 
-    # 💸 EXACT TRANSFER
     await users.update_one(
         {"_id": user_id},
-        {"$inc": {"balance": amount}}   # 👈 jitna rob = utna add
+        {"$inc": {"balance": amount}}
     )
 
     await users.update_one(
         {"_id": target["_id"]},
-        {"$inc": {"balance": -amount}}  # 👈 utna hi deduct
+        {"$inc": {"balance": -amount}}
     )
 
     await message.reply(
-        f"💰 Rob Successful!\n"
-        f"🎯 Looted: {amount} coins"
+        f"💰 Rob Successful!\n🎯 Looted: {amount} coins"
     )
 
 # ---------------- TOP ---------------- #
@@ -320,7 +325,13 @@ async def top(_, message):
     rank = 1
 
     async for user in users.find().sort("balance", -1).limit(10):
-        text += f"{rank}. {user['_id']} - 💰 {user['balance']}\n"
+        try:
+            user_obj = await app.get_users(user["_id"])
+            name = user_obj.first_name
+        except:
+            name = user["_id"]
+
+        text += f"{rank}. {name} - 💰 {user['balance']}\n"
         rank += 1
 
     await message.reply(text)
