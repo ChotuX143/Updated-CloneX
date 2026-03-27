@@ -7,7 +7,6 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, 
 from py_yt import VideosSearch
 from VILLAIN import app
 
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 import config
 from VILLAIN.misc import _boot_
 from VILLAIN.plugins.sudo.sudoers import sudoers_list
@@ -109,7 +108,10 @@ async def start_pm(client, message: Message, _):
             )
         ],
         [
-            InlineKeyboardButton(text=_["C_B_2"], user_id=C_BOT_OWNER_ID),
+            InlineKeyboardButton(
+                text=_["C_B_2"],
+                url=f"tg://user?id={C_BOT_OWNER_ID}"   # ✅ FIXED
+            ),
             InlineKeyboardButton(text=_["S_B_6"], url=C_SUPPORT_CHANNEL),
         ],
         [
@@ -168,7 +170,10 @@ async def clone_start_back_callback(client, CallbackQuery: CallbackQuery, _):
             )
         ],
         [
-            InlineKeyboardButton(text=_["C_B_2"], user_id=C_BOT_OWNER_ID),
+            InlineKeyboardButton(
+                text=_["C_B_2"],
+                url=f"tg://user?id={C_BOT_OWNER_ID}"   # ✅ FIXED
+            ),
             InlineKeyboardButton(text=_["S_B_6"], url=C_SUPPORT_CHANNEL),
         ],
         [
