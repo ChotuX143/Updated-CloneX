@@ -3,7 +3,7 @@ import time
 from pyrogram import filters
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import MONGO_DB_URI, OWNER_ID
-from yourbot import app   # 👈 apne bot ka main import name yaha daal
+from VILLAIN import app   
 
 # ---------------- DB ---------------- #
 mongo = AsyncIOMotorClient(MONGO_DB_URI)
