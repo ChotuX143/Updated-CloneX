@@ -275,6 +275,23 @@ async def kill(_, message):
 async def rob(_, message):
     user_id = message.from_user.id
 
+    # ❌ Reply required
+    if not message.reply_to_message:
+        return await message.reply("❌ Reply to user to rob")
+
+    if message.reply_to_message.sender_chat:
+        return await message.reply("❌ Channel pe rob nahi kar sakte")
+
+    if not message.reply_to_message.from_user:
+        return await message.reply("❌ Invalid user")
+
+    target_id = message.reply_to_message.from_user.id
+
+    # ❌ Self rob block
+    if target_id == user_id:
+        return await message.reply("❌ Khud ko rob nahi kar sakte")
+
+    # 💰 Amount check
     if len(message.command) < 2:
         return await message.reply("Usage: /rob amount")
 
@@ -286,38 +303,35 @@ async def rob(_, message):
     if amount <= 0:
         return await message.reply("❌ Amount > 0 hona chahiye")
 
+    # 👤 Get users
     user = await get_user(user_id)
+    target = await get_user(target_id)
 
-    target = await users.aggregate([
-        {"$match": {"_id": {"$ne": user_id}}},
-        {"$sample": {"size": 1}}
-    ]).to_list(1)
-
-    if not target:
-        return await message.reply("❌ Koi target nahi mila")
-
-    target = target[0]
-
+    # 🛡️ Protection check
     if target.get("protected") and target.get("protect_time", 0) > time.time():
         return await message.reply("🛡️ Target protected hai! Rob fail")
+
+    # 💸 Target balance check (IMPORTANT FIX)
+    if target.get("balance", 0) <= 0:
+        return await message.reply("❌ Target ke paas coins hi nahi hai")
 
     if target.get("balance", 0) < amount:
         return await message.reply("❌ Target ke paas itne coins nahi")
 
+    # 💸 Transfer
     await users.update_one(
         {"_id": user_id},
         {"$inc": {"balance": amount}}
     )
 
     await users.update_one(
-        {"_id": target["_id"]},
+        {"_id": target_id},
         {"$inc": {"balance": -amount}}
     )
 
     await message.reply(
         f"💰 Rob Successful!\n🎯 Looted: {amount} coins"
-    )
-
+        )
 # ---------------- TOP ---------------- #
 @app.on_message(filters.command("top"))
 async def top(_, message):
