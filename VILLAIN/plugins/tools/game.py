@@ -30,14 +30,42 @@ async def get_user(user_id):
     return user
 
 # ---------------- BALANCE ---------------- #
-@app.on_message(filters.command("balance"))
-async def balance(_, message):
-    user = await get_user(message.from_user.id)
+from pyrogram import filters
 
+@app.on_message(filters.command(["balance", "bal"]))
+async def balance(_, message):
+
+    user_id = None
+    name = None
+
+    # 🔁 Reply case
+    if message.reply_to_message:
+        user_id = message.reply_to_message.from_user.id
+        name = message.reply_to_message.from_user.first_name
+
+    # 🔍 Mention case
+    elif len(message.command) > 1:
+        try:
+            user = await app.get_users(message.command[1])
+            user_id = user.id
+            name = user.first_name
+        except:
+            return await message.reply("❌ User not found")
+
+    # 👤 Self case
+    else:
+        user_id = message.from_user.id
+        name = message.from_user.first_name
+
+    # 📊 Get user data
+    user = await get_user(user_id)
+
+    # 📤 Reply
     await message.reply_text(
-        f"💰 Balance: {user['balance']}\n"
-        f"⭐ Level: {user['level']}\n"
-        f"🔥 XP: {user['xp']}"
+        f"💰 **Balance of {name}:**\n\n"
+        f"💸 Coins: `{user['balance']}`\n"
+        f"⭐ Level: `{user['level']}`\n"
+        f"🔥 XP: `{user['xp']}`"
     )
 
 # ---------------- ADD MONEY ---------------- #
