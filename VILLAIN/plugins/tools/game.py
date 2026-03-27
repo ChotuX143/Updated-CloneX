@@ -1,25 +1,16 @@
-import os
 import random
 import time
-from pyrogram import Client, filters
+from pyrogram import filters
 from motor.motor_asyncio import AsyncIOMotorClient
+from config import MONGO_DB_URI, OWNER_ID
+from yourbot import app   # 👈 apne bot ka main import name yaha daal
 
-# ---------------- CONFIG ---------------- #
-API_ID = int(os.getenv("API_ID"))
-API_HASH = os.getenv("API_HASH")
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-OWNER_ID = int(os.getenv("OWNER_ID"))
-
-MONGO_DB_URI = os.getenv("MONGO_DB_URI")
-
-# ---------------- BOT ---------------- #
-app = Client("rpg-bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
-
+# ---------------- DB ---------------- #
 mongo = AsyncIOMotorClient(MONGO_DB_URI)
 db = mongo["rpg_bot"]
 users = db["users"]
 
-# ---------------- USER SYSTEM ---------------- #
+# ---------------- USER ---------------- #
 async def get_user(user_id):
     user = await users.find_one({"_id": user_id})
 
@@ -130,20 +121,16 @@ async def kill(_, message):
     target_id = message.reply_to_message.from_user.id
     target = await get_user(target_id)
 
-    # Already dead check
     if target["dead"]:
         return await message.reply("☠️ Already dead")
 
-    # Protection check
     if target["protected"]:
         return await message.reply("🛡️ Protected user")
 
-    # Cooldown
     now = time.time()
     if now - killer["last_kill"] < 60:
         return await message.reply("⏳ Cooldown")
 
-    # Cost
     if killer["balance"] < 500:
         return await message.reply("❌ Need 500 coins")
 
@@ -179,12 +166,10 @@ async def rob(_, message):
     if user["dead"]:
         return await message.reply("☠️ Tum dead ho")
 
-    # Cooldown
     now = time.time()
     if now - user["last_rob"] < 60:
         return await message.reply("⏳ Cooldown")
 
-    # Random target
     target = await users.aggregate([
         {"$match": {"_id": {"$ne": user_id}}},
         {"$sample": {"size": 1}}
@@ -228,7 +213,7 @@ async def rob(_, message):
 
         await message.reply(f"🚔 Failed! Lost {penalty}")
 
-# ---------------- LEADERBOARD ---------------- #
+# ---------------- TOP ---------------- #
 @app.on_message(filters.command("top"))
 async def top(_, message):
     text = "🏆 Top Users:\n\n"
@@ -239,7 +224,3 @@ async def top(_, message):
         rank += 1
 
     await message.reply(text)
-
-# ---------------- START ---------------- #
-print("RPG Bot Started...")
-app.run()
