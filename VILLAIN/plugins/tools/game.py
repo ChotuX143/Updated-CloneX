@@ -1,153 +1,245 @@
-from pyrogram import filters
-from VILLAIN import app
-from VILLAIN.utils.database import mongodb
+import os
 import random
 import time
+from pyrogram import Client, filters
+from motor.motor_asyncio import AsyncIOMotorClient
 
-# 🔗 DB collection
-db = mongodb["economy"]
+# ---------------- CONFIG ---------------- #
+API_ID = int(os.getenv("API_ID"))
+API_HASH = os.getenv("API_HASH")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID"))
+
+MONGO_DB_URI = os.getenv("MONGO_DB_URI")
+
+# ---------------- BOT ---------------- #
+app = Client("rpg-bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
+mongo = AsyncIOMotorClient(MONGO_DB_URI)
+db = mongo["rpg_bot"]
 users = db["users"]
 
-
-# 🧠 Get/Create User
+# ---------------- USER SYSTEM ---------------- #
 async def get_user(user_id):
     user = await users.find_one({"_id": user_id})
+
     if not user:
         user = {
             "_id": user_id,
-            "coins": 100,
-            "alive": True,
-            "last_kill": 0,
+            "balance": 1000,
+            "xp": 0,
+            "level": 1,
+            "protected": False,
+            "dead": False,
             "last_rob": 0,
-            "protect_until": 0
+            "last_kill": 0
         }
         await users.insert_one(user)
+
     return user
 
+# ---------------- BALANCE ---------------- #
+@app.on_message(filters.command("balance"))
+async def balance(_, message):
+    user = await get_user(message.from_user.id)
 
-# 💾 Update user
-async def update_user(user_id, data):
-    await users.update_one({"_id": user_id}, {"$set": data})
+    await message.reply_text(
+        f"💰 Balance: {user['balance']}\n"
+        f"⭐ Level: {user['level']}\n"
+        f"🔥 XP: {user['xp']}"
+    )
 
+# ---------------- ADD MONEY ---------------- #
+@app.on_message(filters.command("addmoney") & filters.user(OWNER_ID))
+async def addmoney(_, message):
+    try:
+        user_id = int(message.command[1])
+        amount = int(message.command[2])
+    except:
+        return await message.reply("Usage: /addmoney user_id amount")
 
-# 🔪 KILL
-@app.on_message(filters.command("kill") & filters.group)
-async def kill(client, message):
-    user_id = message.from_user.id
-    user = await get_user(user_id)
+    await users.update_one(
+        {"_id": user_id},
+        {"$inc": {"balance": amount}}
+    )
 
+    await message.reply("✅ Money Added")
+
+# ---------------- GIVE ---------------- #
+@app.on_message(filters.command("give"))
+async def give(_, message):
+    if not message.reply_to_message:
+        return await message.reply("Reply to user")
+
+    sender = await get_user(message.from_user.id)
+
+    if sender["dead"]:
+        return await message.reply("☠️ Tum dead ho")
+
+    receiver_id = message.reply_to_message.from_user.id
+
+    try:
+        amount = int(message.command[1])
+    except:
+        return await message.reply("Usage: /give amount")
+
+    if sender["balance"] < amount:
+        return await message.reply("❌ Not enough balance")
+
+    await users.update_one({"_id": sender["_id"]}, {"$inc": {"balance": -amount}})
+    await users.update_one({"_id": receiver_id}, {"$inc": {"balance": amount}})
+
+    await message.reply("✅ Transfer successful")
+
+# ---------------- PROTECT ---------------- #
+@app.on_message(filters.command("protect"))
+async def protect(_, message):
+    await users.update_one(
+        {"_id": message.from_user.id},
+        {"$set": {"protected": True}}
+    )
+
+    await message.reply("🛡️ Protection Enabled")
+
+# ---------------- REVIVE ---------------- #
+@app.on_message(filters.command("revive"))
+async def revive(_, message):
+    user = await get_user(message.from_user.id)
+
+    if not user["dead"]:
+        return await message.reply("❌ Already alive")
+
+    await users.update_one(
+        {"_id": message.from_user.id},
+        {"$set": {"dead": False}}
+    )
+
+    await message.reply("❤️ Revived!")
+
+# ---------------- KILL ---------------- #
+@app.on_message(filters.command("kill"))
+async def kill(_, message):
+    if not message.reply_to_message:
+        return await message.reply("Reply to user")
+
+    killer = await get_user(message.from_user.id)
+
+    if killer["dead"]:
+        return await message.reply("☠️ Tum dead ho")
+
+    target_id = message.reply_to_message.from_user.id
+    target = await get_user(target_id)
+
+    # Already dead check
+    if target["dead"]:
+        return await message.reply("☠️ Already dead")
+
+    # Protection check
+    if target["protected"]:
+        return await message.reply("🛡️ Protected user")
+
+    # Cooldown
     now = time.time()
+    if now - killer["last_kill"] < 60:
+        return await message.reply("⏳ Cooldown")
 
-    if now - user["last_kill"] < 300:
-        return await message.reply("⏳ Wait 5 min before next kill")
+    # Cost
+    if killer["balance"] < 500:
+        return await message.reply("❌ Need 500 coins")
 
-    reward = random.randint(50, 150)
-
-    await update_user(user_id, {
-        "coins": user["coins"] + reward,
-        "alive": False,
-        "last_kill": now
+    await users.update_one({"_id": killer["_id"]}, {
+        "$inc": {"balance": -500},
+        "$set": {"last_kill": now}
     })
 
-    await message.reply(f"🔪 Killed enemy! +{reward} coins")
+    await users.update_one({"_id": target_id}, {
+        "$set": {"dead": True}
+    })
 
+    await message.reply("☠️ User killed!")
 
-# ❤️ REVIVE
-@app.on_message(filters.command("revive") & filters.group)
-async def revive(client, message):
-    user_id = message.from_user.id
-    await update_user(user_id, {"alive": True})
-    await message.reply("❤️ You are revived")
-
-
-# 🛡 PROTECT
-@app.on_message(filters.command("protect") & filters.group)
-async def protect(client, message):
+# ---------------- ROB ---------------- #
+@app.on_message(filters.command("rob"))
+async def rob(_, message):
     user_id = message.from_user.id
 
     if len(message.command) < 2:
-        return await message.reply("Usage: /protect 1h / 30m / 1d")
-
-    time_str = message.command[1].lower()
+        return await message.reply("Usage: /rob amount")
 
     try:
-        if "h" in time_str:
-            seconds = int(time_str.replace("h", "")) * 3600
-        elif "m" in time_str:
-            seconds = int(time_str.replace("m", "")) * 60
-        elif "d" in time_str:
-            seconds = int(time_str.replace("d", "")) * 86400
-        else:
-            return await message.reply("❌ Invalid format")
+        amount = int(message.command[1])
     except:
-        return await message.reply("❌ Invalid time")
+        return await message.reply("Invalid amount")
 
-    protect_until = time.time() + seconds
+    if amount <= 0:
+        return await message.reply("Amount > 0")
 
-    await update_user(user_id, {"protect_until": protect_until})
+    user = await get_user(user_id)
 
-    await message.reply(f"🛡 Protected for {time_str}")
+    if user["dead"]:
+        return await message.reply("☠️ Tum dead ho")
 
-
-# 🔍 CHECK
-@app.on_message(filters.command("check") & filters.group)
-async def check(client, message):
-    user = await get_user(message.from_user.id)
-
-    if user["protect_until"] > time.time():
-        remaining = int(user["protect_until"] - time.time())
-        await message.reply(f"🛡 Protected for {remaining}s")
-    else:
-        await message.reply("❌ No protection")
-
-
-# 💸 ROB
-@app.on_message(filters.command("rob") & filters.group)
-async def rob(client, message):
-    if not message.reply_to_message:
-        return await message.reply("Reply to user to rob")
-
-    attacker_id = message.from_user.id
-    target_id = message.reply_to_message.from_user.id
-
-    if attacker_id == target_id:
-        return await message.reply("❌ Can't rob yourself")
-
-    attacker = await get_user(attacker_id)
-    target = await get_user(target_id)
-
+    # Cooldown
     now = time.time()
+    if now - user["last_rob"] < 60:
+        return await message.reply("⏳ Cooldown")
 
-    if now - attacker["last_rob"] < 300:
-        return await message.reply("⏳ Wait 5 min before rob again")
+    # Random target
+    target = await users.aggregate([
+        {"$match": {"_id": {"$ne": user_id}}},
+        {"$sample": {"size": 1}}
+    ]).to_list(1)
 
-    if target["protect_until"] > now:
-        return await message.reply("🛡 Target protected")
+    if not target:
+        return await message.reply("No target")
 
-    if target["coins"] <= 0:
-        return await message.reply("💀 Target has no coins")
+    target = target[0]
 
-    amount = random.randint(20, 100)
-    amount = min(amount, target["coins"])
+    if target["dead"]:
+        return await message.reply("☠️ Target dead")
 
-    success = random.choice([True, False])
+    if target["protected"]:
+        return await message.reply("🛡️ Target protected")
+
+    if target["balance"] < amount:
+        return await message.reply("❌ Target poor")
+
+    success = random.randint(1, 100) <= 60
 
     if success:
-        await update_user(attacker_id, {
-            "coins": attacker["coins"] + amount,
-            "last_rob": now
-        })
-        await update_user(target_id, {
-            "coins": target["coins"] - amount
+        await users.update_one({"_id": user_id}, {
+            "$inc": {"balance": amount},
+            "$set": {"last_rob": now}
         })
 
-        await message.reply(f"💸 Success! Stole {amount} coins")
+        await users.update_one({"_id": target["_id"]}, {
+            "$inc": {"balance": -amount}
+        })
+
+        await message.reply(f"💰 Rob success! Looted {amount}")
+
     else:
-        loss = random.randint(10, 50)
+        penalty = int(amount * 0.3)
 
-        await update_user(attacker_id, {
-            "coins": max(0, attacker["coins"] - loss),
-            "last_rob": now
+        await users.update_one({"_id": user_id}, {
+            "$inc": {"balance": -penalty},
+            "$set": {"last_rob": now}
         })
 
-        await message.reply(f"❌ Failed! Lost {loss} coins")
+        await message.reply(f"🚔 Failed! Lost {penalty}")
+
+# ---------------- LEADERBOARD ---------------- #
+@app.on_message(filters.command("top"))
+async def top(_, message):
+    text = "🏆 Top Users:\n\n"
+    rank = 1
+
+    async for user in users.find().sort("balance", -1).limit(10):
+        text += f"{rank}. {user['_id']} - 💰 {user['balance']}\n"
+        rank += 1
+
+    await message.reply(text)
+
+# ---------------- START ---------------- #
+print("RPG Bot Started...")
+app.run()
