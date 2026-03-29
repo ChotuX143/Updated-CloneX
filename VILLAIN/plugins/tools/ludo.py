@@ -186,3 +186,38 @@ async def end(_, message: Message):
     del ludo_games[chat_id]
 
     await message.reply_text("🛑 𝗟𝗨𝗗𝗢 𝗘𝗡𝗗𝗘𝗗!")
+
+import random
+from pyrogram import Client, filters
+from pyrogram.types import Message
+
+# Kuch kiss GIF links (tum aur bhi add kar sakte ho)
+KISS_GIFS = [
+    "https://media.tenor.com/8rQd7v3bU2AAAAAC/anime-kiss.gif",
+    "https://media.tenor.com/bkLk0jz9kWQAAAAC/kiss-anime.gif",
+    "https://media.tenor.com/wlXr6dF2z8kAAAAC/anime-love.gif",
+    "https://media.tenor.com/0AVbKGY_MxMAAAAC/kiss.gif"
+]
+
+@app.on_message(filters.command("kiss") & filters.reply)
+async def kiss_command(client: Client, message: Message):
+    user = message.from_user
+    victim = message.reply_to_message.from_user
+
+    if not victim:
+        return await message.reply_text("❌ Reply to someone to kiss!")
+
+    # Names
+    user_name = user.first_name
+    victim_name = victim.first_name
+
+    # Random GIF
+    gif = random.choice(KISS_GIFS)
+
+    # Caption
+    caption = f"😘 {user_name} kissed {victim_name} 💋"
+
+    await message.reply_animation(
+        animation=gif,
+        caption=caption
+        )
