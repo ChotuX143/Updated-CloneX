@@ -90,7 +90,7 @@ def first_page(_):
             [
                 InlineKeyboardButton(text=_["C_B_1"], callback_data="help_callback chelp"),
             ],
-            [InlineKeyboardButton(text="๏ ᴍᴇɴᴜ ๏", callback_data=f"settingsback_helper")]
+            [InlineKeyboardButton(text="๏ close ๏", callback_data="close")]
         ]
     )
     return first_page_menu
