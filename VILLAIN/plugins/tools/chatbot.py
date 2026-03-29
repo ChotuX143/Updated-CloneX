@@ -5,13 +5,18 @@ from pyrogram import filters
 from pyrogram.types import Message
 from pyrogram.enums import ChatAction
 from motor.motor_asyncio import AsyncIOMotorClient
-
-import g4f
 from config import MONGO_DB_URI, OWNER_ID
 from VILLAIN import app as dev
 
-# ================= CONFIG =================
+# ================= SAFE G4F IMPORT =================
+try:
+    import g4f
+    G4F_AVAILABLE = True
+except Exception:
+    g4f = None
+    G4F_AVAILABLE = False
 
+# ================= CONFIG =================
 BOT_USERNAME = "TamannaCloneBot"   # without @
 
 mongo = AsyncIOMotorClient(MONGO_DB_URI)
@@ -20,14 +25,12 @@ settings_col = db["settings"]
 memory_col = db["memory"]
 
 # ================= OWNER CHECK =================
-
 def is_owner(user_id: int):
     if isinstance(OWNER_ID, list):
         return user_id in OWNER_ID
     return user_id == OWNER_ID
 
 # ================= SETTINGS =================
-
 async def is_chatbot_enabled(chat_id: int):
     data = await settings_col.find_one({"_id": chat_id})
     if not data:
@@ -43,7 +46,6 @@ async def set_chatbot(chat_id: int, state: bool):
     )
 
 # ================= MEMORY =================
-
 async def get_user_memory(chat_id: int, user_id: int):
     return await memory_col.find_one({"_id": f"{chat_id}_{user_id}"})
 
@@ -63,7 +65,6 @@ async def save_user_memory(chat_id: int, user_id: int, user_name: str, message_t
     )
 
 # ================= HELPERS =================
-
 def clean_text(text: str):
     if not text:
         return ""
@@ -77,13 +78,13 @@ def contains_link(text: str):
 
 def is_message_for_someone_else(message: Message):
     try:
-        # Reply kisi aur user ko hai
+        # reply kisi aur user ko ho
         if message.reply_to_message:
             replied_user = message.reply_to_message.from_user
             if replied_user and not replied_user.is_self:
                 return True
 
-        # Mention kisi aur ko hai
+        # mention kisi aur ko ho
         if message.entities and message.text:
             for entity in message.entities:
                 etype = str(entity.type).lower()
@@ -91,7 +92,6 @@ def is_message_for_someone_else(message: Message):
                     mention_text = message.text[entity.offset: entity.offset + entity.length]
                     if mention_text.lower() != f"@{BOT_USERNAME.lower()}":
                         return True
-
         return False
     except Exception:
         return False
@@ -105,6 +105,7 @@ def pick_non_repeating_reply(replies, last_reply=None):
         return random.choice(filtered)
     return random.choice(replies)
 
+# ================= REPLIES =================
 FALLBACK_REPLIES = [
     "Hmm... samajh rahi hoon 😊",
     "Acha ji, aur batao 💖",
@@ -115,6 +116,9 @@ FALLBACK_REPLIES = [
     "Hmmm... interesting hai ✨",
     "Bolo jaan, sun rahi hoon 💖",
     "Samajh gayi, aur batao 😌",
+    "Okay ji 😊",
+    "Haan theek hai 💕",
+    "Baat to sahi hai 😌",
 ]
 
 KEYWORD_REPLIES = {
@@ -137,8 +141,11 @@ KEYWORD_REPLIES = {
     "exam": ["Exam ka stress mat lo 😊", "Revision karo, sab ho jayega 📚", "Main hoon help ke liye 💖"],
     "kaise ho": ["Main theek hoon 😊", "Bilkul acchi hoon, tum batao? 💕", "Main mast hoon 😄"],
     "kya kar rahe ho": ["Tumse baat 😊", "Reply de rahi hoon 💖", "Bas yahin hoon 😌"],
+    "kon ho": ["Main Tamanna hoon 😊", "Tamanna yahin hai 💖", "Main Tamanna, tum batao? 😌"],
+    "who are you": ["Main Tamanna hoon 😊", "Tamanna yahin hai 💖", "Main Tamanna, tum batao? 😌"],
 }
 
+# ================= AI / SMART REPLY =================
 async def generate_ai_reply(chat_id: int, user_id: int, user_name: str, text: str):
     memory = await get_user_memory(chat_id, user_id)
     last_reply = memory.get("last_reply") if memory else ""
@@ -146,10 +153,14 @@ async def generate_ai_reply(chat_id: int, user_id: int, user_name: str, text: st
 
     clean = text.strip().lower()
 
-    # Pehle keyword reply check
+    # keyword-based smart replies first
     for key, replies in KEYWORD_REPLIES.items():
         if key in clean:
             return pick_non_repeating_reply(replies, last_reply)
+
+    # if g4f not installed, fallback
+    if not G4F_AVAILABLE:
+        return pick_non_repeating_reply(FALLBACK_REPLIES, last_reply)
 
     prompt = f"""
 Tumhara naam TAMANNA 💖 hai.
@@ -195,19 +206,15 @@ Tamanna:
         if len(final_answer) > 250:
             final_answer = final_answer[:250].strip()
 
-        # same last reply avoid
         if final_answer.strip() == (last_reply or "").strip():
             return pick_non_repeating_reply(FALLBACK_REPLIES, last_reply)
 
         return final_answer
 
     except Exception:
-        if clean == last_message:
-            return pick_non_repeating_reply(FALLBACK_REPLIES, last_reply)
         return pick_non_repeating_reply(FALLBACK_REPLIES, last_reply)
 
 # ================= COMMANDS =================
-
 @dev.on_message(filters.command("chatboton") & filters.group)
 async def chatbot_on(_, message: Message):
     if not message.from_user:
@@ -250,7 +257,6 @@ async def chatbot_status(_, message: Message):
     )
 
 # ================= MAIN HANDLER =================
-
 @dev.on_message(
     filters.text
     & filters.group
@@ -280,7 +286,6 @@ async def smart_bot_handler(client, message: Message):
         if contains_link(text):
             return
 
-        # commands ignore
         if text.startswith("/") or text.startswith("#"):
             return
 
