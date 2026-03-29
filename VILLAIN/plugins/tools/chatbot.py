@@ -1,223 +1,217 @@
 import re
 import asyncio
+import aiohttp
+
 from pyrogram import filters
+from pyrogram.enums import ChatAction, ChatType
 from pyrogram.types import Message
-from pyrogram.enums import ChatAction
 from motor.motor_asyncio import AsyncIOMotorClient
+
 from config import MONGO_DB_URI, OWNER_ID
-from VILLAIN import app as dev
+from VILLAIN import app
 
-# ================= SAFE G4F =================
-try:
-    import g4f
-    G4F_AVAILABLE = True
-except:
-    g4f = None
-    G4F_AVAILABLE = False
-
-# ================= CONFIG =================
-BOT_USERNAME = "TamannaCloneBot"
+# ================= DATABASE =================
 
 mongo = AsyncIOMotorClient(MONGO_DB_URI)
-db = mongo["tamanna_chatbot"]
+db = mongo["chatbot_db"]
+chatbot_db = db["chatbot_settings"]
 
-settings_col = db["settings"]
-memory_col = db["memory"]
-used_col = db["used_replies"]
+# ================= CONFIG =================
 
-# ================= OWNER =================
-def is_owner(user_id):
+BOT_USERNAME = "TamannaCloneBot"   # without @
+
+# OpenAI-compatible API settings
+API_URL = "https://your-api-url.com/v1/chat/completions"
+API_KEY = "your_api_key_here"
+MODEL = "gpt-4o-mini"
+
+# ================= DATABASE FUNCTIONS =================
+
+async def is_chatbot_enabled(chat_id: int) -> bool:
+    data = await chatbot_db.find_one({"chat_id": chat_id})
+    return bool(data and data.get("enabled", False))
+
+
+async def set_chatbot(chat_id: int, enabled: bool):
+    await chatbot_db.update_one(
+        {"chat_id": chat_id},
+        {"$set": {"enabled": enabled}},
+        upsert=True
+    )
+
+
+def is_owner(user_id: int) -> bool:
     if isinstance(OWNER_ID, list):
         return user_id in OWNER_ID
     return user_id == OWNER_ID
 
-# ================= SETTINGS =================
-async def is_chatbot_enabled(chat_id):
-    data = await settings_col.find_one({"_id": chat_id})
-    if not data:
-        await settings_col.insert_one({"_id": chat_id, "enabled": False})
-        return False
-    return data.get("enabled", False)
-
-async def set_chatbot(chat_id, state):
-    await settings_col.update_one(
-        {"_id": chat_id},
-        {"$set": {"enabled": state}},
-        upsert=True
-    )
-
-# ================= MEMORY =================
-async def get_user_memory(chat_id, user_id):
-    return await memory_col.find_one({"_id": f"{chat_id}_{user_id}"})
-
-async def save_user_memory(chat_id, user_id, name, msg, reply):
-    await memory_col.update_one(
-        {"_id": f"{chat_id}_{user_id}"},
-        {"$set": {"last_message": msg.lower(), "last_reply": reply}},
-        upsert=True
-    )
-
-# ================= USED REPLIES =================
-async def is_reply_used(chat_id, reply):
-    return await used_col.find_one({"chat_id": chat_id, "reply": reply})
-
-async def save_used_reply(chat_id, reply):
-    await used_col.insert_one({
-        "chat_id": chat_id,
-        "reply": reply
-    })
-
 # ================= HELPERS =================
-def clean_text(text):
-    return text.strip() if text else ""
 
-def contains_link(text):
-    return bool(re.search(r"(https?://|t\.me/|www\.)", text.lower()))
+def contains_link(text: str) -> bool:
+    pattern = r"(https?://\S+|t\.me/\S+|www\.\S+)"
+    return bool(re.search(pattern, text.lower()))
 
-def is_message_for_someone_else(message: Message):
-    try:
-        if message.reply_to_message:
-            u = message.reply_to_message.from_user
-            if u and not u.is_self:
-                return True
 
-        if message.entities and message.text:
-            for e in message.entities:
-                if "mention" in str(e.type).lower():
-                    m = message.text[e.offset:e.offset+e.length]
-                    if m.lower() != f"@{BOT_USERNAME.lower()}":
-                        return True
+def is_bot_mentioned(message: Message) -> bool:
+    if not message.text:
         return False
-    except:
+    return f"@{BOT_USERNAME.lower()}" in message.text.lower()
+
+
+def is_reply_to_bot(message: Message) -> bool:
+    if not message.reply_to_message:
         return False
 
-# ================= AI UNIQUE REPLY =================
-async def generate_ai_reply(chat_id, user_id, name, text):
-    if not G4F_AVAILABLE:
-        return None
+    replied = message.reply_to_message.from_user
+    if not replied:
+        return False
 
-    memory = await get_user_memory(chat_id, user_id)
-    last_reply = memory.get("last_reply") if memory else ""
-    last_message = memory.get("last_message") if memory else ""
+    if replied.is_self:
+        return True
 
-    for _ in range(5):  # retry for unique reply
-        prompt = f"""
-Tum Tamanna ho 💖
+    username = (replied.username or "").lower()
+    return username == BOT_USERNAME.lower()
 
-Rules:
-- 1 line reply
-- max 10 words
-- Hinglish
-- har reply UNIQUE
-- kabhi repeat nahi
 
-User: {text}
-Tamanna:
-"""
+def should_reply_in_group(message: Message) -> bool:
+    return is_bot_mentioned(message) or is_reply_to_bot(message)
 
-        try:
-            res = g4f.ChatCompletion.create(
-                model=g4f.models.gpt_4,
-                messages=[{"role": "user", "content": prompt}],
-            )
 
-            reply = str(res).strip()
+def clean_response(text: str) -> str:
+    if not text:
+        return "Hmm... samajh rahi hoon 😊"
 
-            # 1 line force
-            reply = reply.split("\n")[0].strip()
+    text = str(text).strip()
 
-            # length limit
-            if len(reply) > 80:
-                reply = reply[:80]
+    blocked = [
+        "as an ai",
+        "i am an ai",
+        "i'm an ai",
+        "language model",
+        "openai",
+        "assistant",
+        "i am a bot",
+        "i'm a bot",
+        "artificial intelligence",
+        "system prompt",
+    ]
 
-            used = await is_reply_used(chat_id, reply)
+    low = text.lower()
+    for bad in blocked:
+        if bad in low:
+            return "Acha... tum aur batao na 😊"
 
-            if not used and reply != last_reply:
-                await save_used_reply(chat_id, reply)
-                return reply
+    lines = [x.strip() for x in text.split("\n") if x.strip()]
+    if len(lines) > 2:
+        text = "\n".join(lines[:2])
 
-        except:
-            continue
+    if len(text) > 180:
+        text = text[:180].rsplit(" ", 1)[0] + "..."
 
-    return None
+    return text
 
-# ================= COMMAND =================
-@dev.on_message(filters.command("chatbot") & filters.group)
-async def chatbot_control(_, message: Message):
-    if not message.from_user:
-        return
 
-    try:
-        m = await dev.get_chat_member(message.chat.id, message.from_user.id)
-        admin = m.privileges and m.privileges.can_manage_chat
-    except:
-        admin = False
+async def get_ai_reply(user_text: str) -> str:
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+    }
 
-    if not admin and not is_owner(message.from_user.id):
-        return await message.reply_text("❌ Admin only")
+    payload = {
+        "model": MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Tumhara naam TAMANNA 💖 hai. "
+                    "Tum ek sweet, emotional, friendly ladki ho. "
+                    "Reply short, natural, human-like Hinglish/Hindi me do. "
+                    "Har baar 1 ya 2 line ka pyara reply do. "
+                    "Kabhi AI, bot, assistant, model, system ya prompt ka zikr mat karo."
+                ),
+            },
+            {
+                "role": "user",
+                "content": user_text,
+            },
+        ],
+        "temperature": 0.9,
+        "max_tokens": 80,
+    }
 
+    timeout = aiohttp.ClientTimeout(total=25)
+
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.post(API_URL, headers=headers, json=payload) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                raise Exception(f"API Error {resp.status}: {text}")
+
+            data = await resp.json()
+            return data["choices"][0]["message"]["content"].strip()
+
+# ================= TOGGLE COMMAND =================
+
+@app.on_message(filters.command("chatbot"))
+async def chatbot_toggle(_, message: Message):
     if len(message.command) < 2:
-        state = await is_chatbot_enabled(message.chat.id)
-        return await message.reply_text(
-            f"🤖 Status: {'ON ✅' if state else 'OFF ❌'}\n/chatbot on\n/chatbot off"
-        )
+        return await message.reply_text("Use: `/chatbot on` or `/chatbot off`")
 
     arg = message.command[1].lower()
 
+    if message.chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
+        member = await app.get_chat_member(message.chat.id, message.from_user.id)
+        status = str(member.status).lower()
+
+        if "administrator" not in status and "creator" not in status and not is_owner(message.from_user.id):
+            return await message.reply_text("❌ Only admins can use this.")
+
     if arg == "on":
         await set_chatbot(message.chat.id, True)
-        await message.reply_text("✅ Chatbot ON")
+        return await message.reply_text("✅ Chatbot enabled.")
 
-    elif arg == "off":
+    if arg == "off":
         await set_chatbot(message.chat.id, False)
-        await message.reply_text("❌ Chatbot OFF")
+        return await message.reply_text("❌ Chatbot disabled.")
 
-# ================= MAIN =================
-@dev.on_message(filters.text & filters.group & ~filters.bot)
-async def chatbot_handler(_, message: Message):
+    await message.reply_text("Use: `/chatbot on` or `/chatbot off`")
+
+# ================= MAIN CHATBOT =================
+
+@app.on_message(
+    filters.text
+    & ~filters.bot
+    & ~filters.me
+    & ~filters.via_bot
+    & ~filters.regex(r"^[/#]")
+)
+async def smart_chatbot(_, message: Message):
+    if not message.from_user or not message.text:
+        return
+
+    text = message.text.strip()
+
+    if len(text) < 2:
+        return
+
+    if contains_link(text):
+        return
+
+    enabled = await is_chatbot_enabled(message.chat.id)
+    if not enabled:
+        return
+
+    if message.chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
+        if not should_reply_in_group(message):
+            return
+
+    await message.reply_chat_action(ChatAction.TYPING)
+    await asyncio.sleep(1)
+
     try:
-        if not message.from_user:
-            return
-
-        if not await is_chatbot_enabled(message.chat.id):
-            return
-
-        text = clean_text(message.text)
-
-        if len(text) < 2:
-            return
-
-        if contains_link(text):
-            return
-
-        if is_message_for_someone_else(message):
-            return
-
-        if text.startswith("/") or text.startswith("#"):
-            return
-
-        await message.reply_chat_action(ChatAction.TYPING)
-        await asyncio.sleep(1)
-
-        reply = await generate_ai_reply(
-            message.chat.id,
-            message.from_user.id,
-            message.from_user.first_name,
-            text
-        )
-
-        if not reply:
-            return
-
-        await save_user_memory(
-            message.chat.id,
-            message.from_user.id,
-            message.from_user.first_name,
-            text,
-            reply
-        )
-
+        reply = await get_ai_reply(text)
+        reply = clean_response(reply)
         await message.reply_text(reply)
 
-    except:
-        pass
+    except Exception:
+        await message.reply_text("Hmm... main sun rahi hoon 😊")
