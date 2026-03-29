@@ -1,6 +1,6 @@
 import re
 import asyncio
-import aiohttp
+import g4f
 
 from pyrogram import filters
 from pyrogram.enums import ChatAction, ChatType
@@ -18,12 +18,7 @@ chatbot_db = db["chatbot_settings"]
 
 # ================= CONFIG =================
 
-BOT_USERNAME = "TamannaCloneBot"   # without @
-
-# OpenAI-compatible API settings
-API_URL = "https://your-api-url.com/v1/chat/completions"
-API_KEY = "your_api_key_here"
-MODEL = "gpt-4o-mini"
+BOT_USERNAME = "TamannaCloneBot"  # without @
 
 # ================= DATABASE FUNCTIONS =================
 
@@ -45,6 +40,7 @@ def is_owner(user_id: int) -> bool:
         return user_id in OWNER_ID
     return user_id == OWNER_ID
 
+
 # ================= HELPERS =================
 
 def contains_link(text: str) -> bool:
@@ -53,9 +49,11 @@ def contains_link(text: str) -> bool:
 
 
 def is_bot_mentioned(message: Message) -> bool:
-    if not message.text:
+    if not message.text and not message.caption:
         return False
-    return f"@{BOT_USERNAME.lower()}" in message.text.lower()
+
+    raw_text = (message.text or message.caption or "").lower()
+    return f"@{BOT_USERNAME.lower()}" in raw_text
 
 
 def is_reply_to_bot(message: Message) -> bool:
@@ -93,7 +91,6 @@ def clean_response(text: str) -> str:
         "i am a bot",
         "i'm a bot",
         "artificial intelligence",
-        "system prompt",
     ]
 
     low = text.lower()
@@ -111,44 +108,29 @@ def clean_response(text: str) -> str:
     return text
 
 
-async def get_ai_reply(user_text: str) -> str:
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-    }
+def is_gif_message(message: Message) -> bool:
+    if message.animation:
+        return True
 
-    payload = {
-        "model": MODEL,
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "Tumhara naam TAMANNA 💖 hai. "
-                    "Tum ek sweet, emotional, friendly ladki ho. "
-                    "Reply short, natural, human-like Hinglish/Hindi me do. "
-                    "Har baar 1 ya 2 line ka pyara reply do. "
-                    "Kabhi AI, bot, assistant, model, system ya prompt ka zikr mat karo."
-                ),
-            },
-            {
-                "role": "user",
-                "content": user_text,
-            },
-        ],
-        "temperature": 0.9,
-        "max_tokens": 80,
-    }
+    if message.document and message.document.mime_type:
+        return message.document.mime_type == "image/gif"
 
-    timeout = aiohttp.ClientTimeout(total=25)
+    return False
 
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(API_URL, headers=headers, json=payload) as resp:
-            if resp.status != 200:
-                text = await resp.text()
-                raise Exception(f"API Error {resp.status}: {text}")
 
-            data = await resp.json()
-            return data["choices"][0]["message"]["content"].strip()
+def build_user_input(message: Message) -> str | None:
+    # text message
+    if message.text:
+        return message.text.strip()
+
+    # gif with caption
+    if is_gif_message(message):
+        if message.caption:
+            return f"User sent a GIF with caption: {message.caption.strip()}"
+        return "User sent a GIF. Reply in a cute short way."
+
+    return None
+
 
 # ================= TOGGLE COMMAND =================
 
@@ -176,25 +158,18 @@ async def chatbot_toggle(_, message: Message):
 
     await message.reply_text("Use: `/chatbot on` or `/chatbot off`")
 
+
 # ================= MAIN CHATBOT =================
 
 @app.on_message(
-    filters.text
+    (filters.text | filters.animation | filters.document)
     & ~filters.bot
     & ~filters.me
     & ~filters.via_bot
     & ~filters.regex(r"^[/#]")
 )
 async def smart_chatbot(_, message: Message):
-    if not message.from_user or not message.text:
-        return
-
-    text = message.text.strip()
-
-    if len(text) < 2:
-        return
-
-    if contains_link(text):
+    if not message.from_user:
         return
 
     enabled = await is_chatbot_enabled(message.chat.id)
@@ -205,12 +180,38 @@ async def smart_chatbot(_, message: Message):
         if not should_reply_in_group(message):
             return
 
+    text = build_user_input(message)
+    if not text:
+        return
+
+    if message.text and len(text) < 2:
+        return
+
+    if (message.text or message.caption) and contains_link(message.text or message.caption or ""):
+        return
+
     await message.reply_chat_action(ChatAction.TYPING)
     await asyncio.sleep(1)
 
     try:
-        reply = await get_ai_reply(text)
-        reply = clean_response(reply)
+        prompt = f"""
+Tumhara naam TAMANNA 💖 hai.
+Tum ek sweet, emotional, friendly ladki ho.
+Reply short, natural, human-like Hinglish/Hindi me do.
+Har baar 1 ya 2 line ka pyara reply do.
+Kabhi AI, bot, assistant, OpenAI, model ya prompt ka zikr mat karo.
+Agar user GIF bheje to uske mood ke hisaab se cute short reaction do.
+
+User: {text}
+Tamanna:
+"""
+
+        response = g4f.ChatCompletion.create(
+            model=g4f.models.gpt_4,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        reply = clean_response(response)
         await message.reply_text(reply)
 
     except Exception:
