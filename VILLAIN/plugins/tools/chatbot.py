@@ -1,6 +1,5 @@
 import re
 import asyncio
-import random
 from pyrogram import filters
 from pyrogram.types import Message
 from pyrogram.enums import ChatAction
@@ -34,9 +33,10 @@ def is_owner(user_id: int):
 async def is_chatbot_enabled(chat_id: int):
     data = await settings_col.find_one({"_id": chat_id})
     if not data:
-        await settings_col.insert_one({"_id": chat_id, "enabled": True})
-        return True
-    return data.get("enabled", True)
+        # default OFF
+        await settings_col.insert_one({"_id": chat_id, "enabled": False})
+        return False
+    return data.get("enabled", False)
 
 async def set_chatbot(chat_id: int, state: bool):
     await settings_col.update_one(
@@ -78,13 +78,13 @@ def contains_link(text: str):
 
 def is_message_for_someone_else(message: Message):
     try:
-        # reply kisi aur user ko ho
+        # अगर reply kisi aur user ko hai
         if message.reply_to_message:
             replied_user = message.reply_to_message.from_user
             if replied_user and not replied_user.is_self:
                 return True
 
-        # mention kisi aur ko ho
+        # अगर mention kisi aur ka hai
         if message.entities and message.text:
             for entity in message.entities:
                 etype = str(entity.type).lower()
@@ -96,56 +96,7 @@ def is_message_for_someone_else(message: Message):
     except Exception:
         return False
 
-def pick_non_repeating_reply(replies, last_reply=None):
-    if not replies:
-        return "Hmm... samajh rahi hoon 😊"
-
-    filtered = [r for r in replies if r.strip() != (last_reply or "").strip()]
-    if filtered:
-        return random.choice(filtered)
-    return random.choice(replies)
-
-# ================= REPLIES =================
-FALLBACK_REPLIES = [
-    "Hmm... samajh rahi hoon 😊",
-    "Acha ji, aur batao 💖",
-    "Haan bolo na 🥀",
-    "Main sun rahi hoon 😊",
-    "Theek hai, samajh gayi 💕",
-    "Achha, phir kya hua? 👀",
-    "Hmmm... interesting hai ✨",
-    "Bolo jaan, sun rahi hoon 💖",
-    "Samajh gayi, aur batao 😌",
-    "Okay ji 😊",
-    "Haan theek hai 💕",
-    "Baat to sahi hai 😌",
-]
-
-KEYWORD_REPLIES = {
-    "hi": ["Hii 😊", "Hello ji 👋", "Heyy 💖", "Hii bolo na 😄"],
-    "hello": ["Hello 💕", "Hey there 😊", "Hello ji, kaise ho?"],
-    "hey": ["Heyy 😌", "Haan bolo 👀", "Hey ji 💖"],
-    "bye": ["Bye 👋", "Take care 💖", "Phir milte hain 😊"],
-    "good night": ["Good night 🌙", "Sweet dreams 😴💖", "Shubh ratri ✨"],
-    "good morning": ["Good morning ☀️", "Subah mubarak 🌸", "Morning ji 😊"],
-    "love": ["Aww 💖", "Itna pyaar 😌", "Cute ho tum ❤️"],
-    "miss you": ["Miss you too 🥺", "Aww ye cute tha 💕", "Main bhi yaad karungi 😌"],
-    "thanks": ["Welcome 😊", "Koi baat nahi 💖", "Anytime 😄"],
-    "thank you": ["Most welcome 💕", "Koi issue nahi 😊", "Hamesha 😌"],
-    "ok": ["Okay 👍", "Theek hai 😊", "Done ✅"],
-    "acha": ["Acha ji 😄", "Samajh gayi 😊", "Haan theek hai 💕"],
-    "hmm": ["Hmm 👀", "Kya soch rahe ho? 😏", "Bolo na 😊"],
-    "sad": ["Aisa mat feel karo 🥺", "Main hoon na, tension mat lo 💖", "Sab theek ho jayega 🌸"],
-    "alone": ["Tum akele nahi ho 🥺", "Main yahin hoon 💖", "Khud ko itna akela mat samjho 🌸"],
-    "study": ["Padhai pe focus rakho 📚", "Kis subject me help chahiye? 😊", "Chalo study ki baat karte hain ✨"],
-    "exam": ["Exam ka stress mat lo 😊", "Revision karo, sab ho jayega 📚", "Main hoon help ke liye 💖"],
-    "kaise ho": ["Main theek hoon 😊", "Bilkul acchi hoon, tum batao? 💕", "Main mast hoon 😄"],
-    "kya kar rahe ho": ["Tumse baat 😊", "Reply de rahi hoon 💖", "Bas yahin hoon 😌"],
-    "kon ho": ["Main Tamanna hoon 😊", "Tamanna yahin hai 💖", "Main Tamanna, tum batao? 😌"],
-    "who are you": ["Main Tamanna hoon 😊", "Tamanna yahin hai 💖", "Main Tamanna, tum batao? 😌"],
-}
-
-# ================= AI / SMART REPLY =================
+# ================= AI REPLY =================
 async def generate_ai_reply(chat_id: int, user_id: int, user_name: str, text: str):
     memory = await get_user_memory(chat_id, user_id)
     last_reply = memory.get("last_reply") if memory else ""
@@ -153,14 +104,10 @@ async def generate_ai_reply(chat_id: int, user_id: int, user_name: str, text: st
 
     clean = text.strip().lower()
 
-    # keyword-based smart replies first
-    for key, replies in KEYWORD_REPLIES.items():
-        if key in clean:
-            return pick_non_repeating_reply(replies, last_reply)
-
-    # if g4f not installed, fallback
     if not G4F_AVAILABLE:
-        return pick_non_repeating_reply(FALLBACK_REPLIES, last_reply)
+        if clean == last_message:
+            return "Achha, kuch aur bolo na 😊"
+        return "Hmm... bolo, main sun rahi hoon 💖"
 
     prompt = f"""
 Tumhara naam TAMANNA 💖 hai.
@@ -201,60 +148,57 @@ Tamanna:
         final_answer = str(response).strip()
 
         if not final_answer:
-            return pick_non_repeating_reply(FALLBACK_REPLIES, last_reply)
+            return "Hmm... samajh rahi hoon 😊"
 
         if len(final_answer) > 250:
             final_answer = final_answer[:250].strip()
 
         if final_answer.strip() == (last_reply or "").strip():
-            return pick_non_repeating_reply(FALLBACK_REPLIES, last_reply)
+            return "Acha ji, aur batao 💖"
 
         return final_answer
 
     except Exception:
-        return pick_non_repeating_reply(FALLBACK_REPLIES, last_reply)
+        if clean == last_message:
+            return "Same baat phir se boli na 😄"
+        return "Thoda sa ruk jao na 🥀"
 
-# ================= COMMANDS =================
-@dev.on_message(filters.command("chatboton") & filters.group)
-async def chatbot_on(_, message: Message):
-    if not message.from_user:
-        return
-
-    try:
-        member = await dev.get_chat_member(message.chat.id, message.from_user.id)
-        is_admin = bool(member.privileges and member.privileges.can_manage_chat)
-    except Exception:
-        is_admin = False
-
-    if not is_admin and not is_owner(message.from_user.id):
-        return await message.reply_text("❌ Only admins or owner can enable chatbot.")
-
-    await set_chatbot(message.chat.id, True)
-    await message.reply_text("✅ **Tamanna chatbot enabled.**")
-
-@dev.on_message(filters.command("chatbotoff") & filters.group)
-async def chatbot_off(_, message: Message):
-    if not message.from_user:
-        return
-
-    try:
-        member = await dev.get_chat_member(message.chat.id, message.from_user.id)
-        is_admin = bool(member.privileges and member.privileges.can_manage_chat)
-    except Exception:
-        is_admin = False
-
-    if not is_admin and not is_owner(message.from_user.id):
-        return await message.reply_text("❌ Only admins or owner can disable chatbot.")
-
-    await set_chatbot(message.chat.id, False)
-    await message.reply_text("❌ **Tamanna chatbot disabled.**")
-
+# ================= COMMAND =================
 @dev.on_message(filters.command("chatbot") & filters.group)
-async def chatbot_status(_, message: Message):
-    state = await is_chatbot_enabled(message.chat.id)
-    await message.reply_text(
-        f"🤖 **Tamanna Chatbot Status:** {'Enabled ✅' if state else 'Disabled ❌'}"
-    )
+async def chatbot_control(_, message: Message):
+    if not message.from_user:
+        return
+
+    try:
+        member = await dev.get_chat_member(message.chat.id, message.from_user.id)
+        is_admin = bool(member.privileges and member.privileges.can_manage_chat)
+    except Exception:
+        is_admin = False
+
+    if not is_admin and not is_owner(message.from_user.id):
+        return await message.reply_text("❌ Only admins or owner can control chatbot.")
+
+    if len(message.command) < 2:
+        state = await is_chatbot_enabled(message.chat.id)
+        return await message.reply_text(
+            f"🤖 **Tamanna Chatbot Status:** {'Enabled ✅' if state else 'Disabled ❌'}\n\n"
+            "**Usage:**\n`/chatbot on`\n`/chatbot off`"
+        )
+
+    arg = message.command[1].lower()
+
+    if arg == "on":
+        await set_chatbot(message.chat.id, True)
+        await message.reply_text("✅ **Tamanna Chatbot Enabled 💖**")
+
+    elif arg == "off":
+        await set_chatbot(message.chat.id, False)
+        await message.reply_text("❌ **Tamanna Chatbot Disabled 🥀**")
+
+    else:
+        await message.reply_text(
+            "⚠️ **Invalid option**\n\n**Use:**\n`/chatbot on`\n`/chatbot off`"
+        )
 
 # ================= MAIN HANDLER =================
 @dev.on_message(
@@ -272,6 +216,7 @@ async def smart_bot_handler(client, message: Message):
         if not message.from_user:
             return
 
+        # default OFF rahega jab tak /chatbot on na ho
         if not await is_chatbot_enabled(message.chat.id):
             return
 
