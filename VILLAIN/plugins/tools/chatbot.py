@@ -23,6 +23,7 @@ db = mongo["tamanna_chatbot"]
 
 settings_col = db["settings"]
 memory_col = db["memory"]
+used_col = db["used_replies"]
 
 # ================= OWNER =================
 def is_owner(user_id):
@@ -56,6 +57,16 @@ async def save_user_memory(chat_id, user_id, name, msg, reply):
         upsert=True
     )
 
+# ================= USED REPLIES =================
+async def is_reply_used(chat_id, reply):
+    return await used_col.find_one({"chat_id": chat_id, "reply": reply})
+
+async def save_used_reply(chat_id, reply):
+    await used_col.insert_one({
+        "chat_id": chat_id,
+        "reply": reply
+    })
+
 # ================= HELPERS =================
 def clean_text(text):
     return text.strip() if text else ""
@@ -80,7 +91,7 @@ def is_message_for_someone_else(message: Message):
     except:
         return False
 
-# ================= AI REPLY =================
+# ================= AI UNIQUE REPLY =================
 async def generate_ai_reply(chat_id, user_id, name, text):
     if not G4F_AVAILABLE:
         return None
@@ -89,51 +100,46 @@ async def generate_ai_reply(chat_id, user_id, name, text):
     last_reply = memory.get("last_reply") if memory else ""
     last_message = memory.get("last_message") if memory else ""
 
-    prompt = f"""
-Tumhara naam TAMANNA 💖 hai.
+    for _ in range(5):  # retry for unique reply
+        prompt = f"""
+Tum Tamanna ho 💖
 
-Tum ek real, sweet, emotional ladki ho.
-
-STRICT RULES:
-- Sirf 1 line reply dena hai
-- Short reply (max 10 words)
-- Hindi / Hinglish use karo
-- Har reply UNIQUE hona chahiye
-- Same reply repeat nahi karna
-- Last reply se alag hona chahiye
-- Natural human tone
-- Light emoji 😊💖
-
-Previous user message: {last_message}
-Previous Tamanna reply: {last_reply}
+Rules:
+- 1 line reply
+- max 10 words
+- Hinglish
+- har reply UNIQUE
+- kabhi repeat nahi
 
 User: {text}
 Tamanna:
 """
 
-    try:
-        res = g4f.ChatCompletion.create(
-            model=g4f.models.gpt_4,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        try:
+            res = g4f.ChatCompletion.create(
+                model=g4f.models.gpt_4,
+                messages=[{"role": "user", "content": prompt}],
+            )
 
-        final_answer = str(res).strip()
+            reply = str(res).strip()
 
-        # 1 line
-        final_answer = final_answer.split("\n")[0].strip()
+            # 1 line force
+            reply = reply.split("\n")[0].strip()
 
-        # length control
-        if len(final_answer) > 80:
-            final_answer = final_answer[:80]
+            # length limit
+            if len(reply) > 80:
+                reply = reply[:80]
 
-        # duplicate avoid
-        if final_answer == last_reply:
-            return None
+            used = await is_reply_used(chat_id, reply)
 
-        return final_answer
+            if not used and reply != last_reply:
+                await save_used_reply(chat_id, reply)
+                return reply
 
-    except:
-        return None
+        except:
+            continue
+
+    return None
 
 # ================= COMMAND =================
 @dev.on_message(filters.command("chatbot") & filters.group)
