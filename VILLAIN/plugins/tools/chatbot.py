@@ -82,16 +82,12 @@ def is_message_for_someone_else(message: Message):
 
 # ================= AI REPLY =================
 async def generate_ai_reply(chat_id, user_id, name, text):
+    if not G4F_AVAILABLE:
+        return None
+
     memory = await get_user_memory(chat_id, user_id)
     last_reply = memory.get("last_reply") if memory else ""
     last_message = memory.get("last_message") if memory else ""
-
-    clean = text.strip().lower()
-
-    if not G4F_AVAILABLE:
-        if clean == last_message:
-            return "Achha kuch naya bolo 😊"
-        return "Haan bolo, sun rahi hoon 💖"
 
     prompt = f"""
 Tumhara naam TAMANNA 💖 hai.
@@ -107,7 +103,6 @@ STRICT RULES:
 - Last reply se alag hona chahiye
 - Natural human tone
 - Light emoji 😊💖
-- Same pattern bhi repeat mat karo
 
 Previous user message: {last_message}
 Previous Tamanna reply: {last_reply}
@@ -124,23 +119,21 @@ Tamanna:
 
         final_answer = str(res).strip()
 
-        # 🔥 1 LINE FORCE
+        # 1 line
         final_answer = final_answer.split("\n")[0].strip()
 
-        # 🔥 LENGTH CONTROL
+        # length control
         if len(final_answer) > 80:
             final_answer = final_answer[:80]
 
-        # 🔥 DUPLICATE CONTROL
+        # duplicate avoid
         if final_answer == last_reply:
-            return "Acha ji, kuch aur bolo 😊"
+            return None
 
         return final_answer
 
     except:
-        if clean == last_message:
-            return "Same baat phir se boli 😄"
-        return "Thoda ruk jao 🥀"
+        return None
 
 # ================= COMMAND =================
 @dev.on_message(filters.command("chatbot") & filters.group)
@@ -207,6 +200,9 @@ async def chatbot_handler(_, message: Message):
             text
         )
 
+        if not reply:
+            return
+
         await save_user_memory(
             message.chat.id,
             message.from_user.id,
@@ -218,7 +214,4 @@ async def chatbot_handler(_, message: Message):
         await message.reply_text(reply)
 
     except:
-        try:
-            await message.reply_text("Thoda ruk jao 🥀")
-        except:
-            pass
+        pass
