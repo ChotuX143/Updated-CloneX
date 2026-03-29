@@ -1,6 +1,7 @@
 import re
+import os
 import asyncio
-import g4f
+import aiohttp
 
 from pyrogram import filters
 from pyrogram.enums import ChatAction, ChatType
@@ -19,6 +20,10 @@ chatbot_db = db["chatbot_settings"]
 # ================= CONFIG =================
 
 BOT_USERNAME = "TamannaCloneBot"  # without @
+
+AI_API_URL = os.getenv("AI_API_URL", "")
+AI_API_KEY = os.getenv("AI_API_KEY", "")
+AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
 
 # ================= DATABASE FUNCTIONS =================
 
@@ -49,9 +54,6 @@ def contains_link(text: str) -> bool:
 
 
 def is_bot_mentioned(message: Message) -> bool:
-    if not message.text and not message.caption:
-        return False
-
     raw_text = (message.text or message.caption or "").lower()
     return f"@{BOT_USERNAME.lower()}" in raw_text
 
@@ -75,6 +77,28 @@ def should_reply_in_group(message: Message) -> bool:
     return is_bot_mentioned(message) or is_reply_to_bot(message)
 
 
+def is_gif_message(message: Message) -> bool:
+    if message.animation:
+        return True
+
+    if message.document and message.document.mime_type:
+        return message.document.mime_type == "image/gif"
+
+    return False
+
+
+def build_user_input(message: Message) -> str | None:
+    if message.text:
+        return message.text.strip()
+
+    if is_gif_message(message):
+        if message.caption:
+            return f"User sent a GIF with caption: {message.caption.strip()}"
+        return "User sent a GIF. Give a short cute Hinglish reaction."
+
+    return None
+
+
 def clean_response(text: str) -> str:
     if not text:
         return "Hmm... samajh rahi hoon 😊"
@@ -91,6 +115,8 @@ def clean_response(text: str) -> str:
         "i am a bot",
         "i'm a bot",
         "artificial intelligence",
+        "system prompt",
+        "model",
     ]
 
     low = text.lower()
@@ -108,34 +134,61 @@ def clean_response(text: str) -> str:
     return text
 
 
-def is_gif_message(message: Message) -> bool:
-    if message.animation:
-        return True
+async def get_ai_reply(user_text: str) -> str:
+    if not AI_API_URL or not AI_API_KEY:
+        return "Hmm... main sun rahi hoon 😊"
 
-    if message.document and message.document.mime_type:
-        return message.document.mime_type == "image/gif"
+    headers = {
+        "Authorization": f"Bearer {AI_API_KEY}",
+        "Content-Type": "application/json",
+    }
 
-    return False
+    payload = {
+        "model": AI_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Tumhara naam TAMANNA 💖 hai. "
+                    "Tum ek sweet, emotional, friendly ladki ho. "
+                    "Reply short, natural, human-like Hinglish/Hindi me do. "
+                    "Har baar 1 ya 2 line ka pyara short reply do. "
+                    "Kabhi AI, bot, assistant, OpenAI, model, system ya prompt ka zikr mat karo. "
+                    "Agar user GIF bheje to uske mood ke hisaab se cute short reaction do."
+                ),
+            },
+            {
+                "role": "user",
+                "content": user_text,
+            },
+        ],
+        "temperature": 0.9,
+        "max_tokens": 80,
+    }
 
+    timeout = aiohttp.ClientTimeout(total=25)
 
-def build_user_input(message: Message) -> str | None:
-    # text message
-    if message.text:
-        return message.text.strip()
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.post(AI_API_URL, headers=headers, json=payload) as response:
+            if response.status != 200:
+                raise Exception(f"API Error: {response.status}")
 
-    # gif with caption
-    if is_gif_message(message):
-        if message.caption:
-            return f"User sent a GIF with caption: {message.caption.strip()}"
-        return "User sent a GIF. Reply in a cute short way."
+            data = await response.json()
 
-    return None
+            if "choices" not in data or not data["choices"]:
+                return "Hmm... samajh rahi hoon 😊"
+
+            content = data["choices"][0]["message"]["content"]
+            return clean_response(content)
 
 
 # ================= TOGGLE COMMAND =================
 
 @app.on_message(filters.command("chatbot"))
 async def chatbot_toggle(_, message: Message):
+    if not message.from_user:
+        return
+
     if len(message.command) < 2:
         return await message.reply_text("Use: `/chatbot on` or `/chatbot off`")
 
@@ -180,39 +233,23 @@ async def smart_chatbot(_, message: Message):
         if not should_reply_in_group(message):
             return
 
-    text = build_user_input(message)
-    if not text:
+    user_input = build_user_input(message)
+    if not user_input:
         return
 
-    if message.text and len(text) < 2:
+    raw_text = (message.text or message.caption or "").strip()
+
+    if message.text and len(raw_text) < 2:
         return
 
-    if (message.text or message.caption) and contains_link(message.text or message.caption or ""):
+    if raw_text and contains_link(raw_text):
         return
 
     await message.reply_chat_action(ChatAction.TYPING)
     await asyncio.sleep(1)
 
     try:
-        prompt = f"""
-Tumhara naam TAMANNA 💖 hai.
-Tum ek sweet, emotional, friendly ladki ho.
-Reply short, natural, human-like Hinglish/Hindi me do.
-Har baar 1 ya 2 line ka pyara reply do.
-Kabhi AI, bot, assistant, OpenAI, model ya prompt ka zikr mat karo.
-Agar user GIF bheje to uske mood ke hisaab se cute short reaction do.
-
-User: {text}
-Tamanna:
-"""
-
-        response = g4f.ChatCompletion.create(
-            model=g4f.models.gpt_4,
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        reply = clean_response(response)
+        reply = await get_ai_reply(user_input)
         await message.reply_text(reply)
-
     except Exception:
         await message.reply_text("Hmm... main sun rahi hoon 😊")
