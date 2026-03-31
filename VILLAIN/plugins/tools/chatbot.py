@@ -2,7 +2,7 @@ import re
 import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pyrogram.enums import ChatAction, ChatType
+from pyrogram.enums import ChatAction
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from config import MONGO_DB_URI, OWNER_ID
@@ -17,7 +17,7 @@ except Exception:
     G4F_AVAILABLE = False
 
 # ================= CONFIG =================
-BOT_USERNAME = "TamannaCloneBot"   # without @
+BOT_USERNAME = "TamannaCloneBot"  # without @
 
 mongo = AsyncIOMotorClient(MONGO_DB_URI)
 db = mongo["tamanna_chatbot"]
@@ -84,38 +84,25 @@ def contains_link(text: str) -> bool:
     return bool(re.search(link_pattern, text.lower()))
 
 
-def is_for_bot(message: Message) -> bool:
-    text = (message.text or "").strip()
-    if not text:
-        return False
-
-    # direct reply to bot
-    if message.reply_to_message:
-        replied_user = message.reply_to_message.from_user
-        if replied_user and replied_user.is_self:
-            return True
-
-    # mention bot username
-    if f"@{BOT_USERNAME.lower()}" in text.lower():
-        return True
-
-    return False
+def fallback_reply() -> str:
+    return "Haan bolo 😊"
 
 
 # ================= AI REPLY =================
 async def generate_g4f_reply(chat_id: int, user_id: int, text: str) -> str | None:
-    if not G4F_AVAILABLE:
-        return None
-
     memory = await get_memory(chat_id, user_id)
     last_reply = memory.get("last_reply", "") if memory else ""
     last_message = memory.get("last_message", "") if memory else ""
 
+    if not G4F_AVAILABLE:
+        reply = fallback_reply()
+        if reply == last_reply:
+            reply = "Aur batao 😊"
+        return reply
+
     for _ in range(5):
         prompt = f"""
 Tumhara naam TAMANNA 💖 hai.
-
-Tum ek sweet, natural, human-like ladki ho.
 
 STRICT RULES:
 - Sirf 1 line me short reply do
@@ -157,11 +144,14 @@ Tamanna:
         except Exception:
             continue
 
-    return None
+    reply = fallback_reply()
+    if reply == last_reply:
+        reply = "Acha, aur bolo 😊"
+    return reply
 
 
 # ================= COMMAND =================
-@app.on_message(filters.command("chatbot") & filters.group)
+@app.on_message(filters.command("chatbot") & (filters.group | filters.supergroup))
 async def chatbot_control(_, message: Message):
     if not message.from_user:
         return
@@ -197,6 +187,7 @@ async def chatbot_control(_, message: Message):
 # ================= MAIN CHATBOT =================
 @app.on_message(
     filters.text
+    & (filters.group | filters.supergroup)
     & ~filters.bot
     & ~filters.me
     & ~filters.via_bot
@@ -218,10 +209,6 @@ async def smart_chat(client: Client, message: Message):
     if not enabled:
         return
 
-    if message.chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
-        if not is_for_bot(message):
-            return
-
     try:
         await message.reply_chat_action(ChatAction.TYPING)
     except Exception:
@@ -230,7 +217,11 @@ async def smart_chat(client: Client, message: Message):
     await asyncio.sleep(1)
 
     try:
-        reply = await generate_g4f_reply(message.chat.id, message.from_user.id, text)
+        reply = await generate_g4f_reply(
+            message.chat.id,
+            message.from_user.id,
+            text
+        )
 
         if not reply:
             return
