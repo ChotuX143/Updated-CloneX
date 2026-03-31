@@ -151,7 +151,7 @@ Tamanna:
 
 
 # ================= COMMAND =================
-@app.on_message(filters.command("chatbot") & (filters.group | filters.supergroup))
+@app.on_message(filters.command("chatbot") & filters.group)
 async def chatbot_control(_, message: Message):
     if not message.from_user:
         return
@@ -187,7 +187,7 @@ async def chatbot_control(_, message: Message):
 # ================= MAIN CHATBOT =================
 @app.on_message(
     filters.text
-    & (filters.group | filters.supergroup)
+    & filters.group
     & ~filters.bot
     & ~filters.me
     & ~filters.via_bot
